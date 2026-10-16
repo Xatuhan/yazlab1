@@ -4,30 +4,38 @@ using UnityEngine.AI;
 public class AirVents : MonoBehaviour
 {
     private NavMeshObstacle obstacle;
+    private Collider ventCollider;
     private bool isOpen = false;
 
     void Start()
     {
-        // Kapak üzerindeki NavMeshObstacle bileþenini al
         obstacle = GetComponent<NavMeshObstacle>();
+        ventCollider = GetComponent<Collider>();
     }
 
-    // Oyuncu E tuþuna bastýðýnda tetiklenecek fonksiyon
     public void OpenVent()
     {
-        if (isOpen) return; // Zaten açýksa tekrar çalýþtýrma
+        if (isOpen) return;
         isOpen = true;
 
-        // 1. NavMesh engelini kaldýr (Robot için havalandýrma yolu açýlýr)
+        // 1. Kapaðýn Collider'ýný kapat (Karakteri zemin altýna itmesini engeller)
+        if (ventCollider != null)
+        {
+            ventCollider.enabled = false;
+        }
+
+        // 2. NavMesh engelini kaldýr
         if (obstacle != null)
         {
             obstacle.enabled = false;
         }
 
-        // 2. Kapaðý hafif öne ve aþaðýya düþürerek yerinden sökülmüþ süsü ver
+        // 3. Kapaðý görsel olarak düþür
         transform.position += transform.forward * 0.2f + Vector3.down * 0.4f;
         transform.Rotate(0f, 0f, 80f);
 
-        Debug.Log("Havalandýrma kapaðý açýldý! NavMesh yolu robot için temizlendi.");
+        GameEventManager.TriggerObstacleCleared();
+
+        Debug.Log("Havalandýrma kapaðý açýldý!");
     }
 }
