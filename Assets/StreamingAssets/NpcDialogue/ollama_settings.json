@@ -1,0 +1,10 @@
+{
+    "baseUrl": "http://127.0.0.1:11434",
+    "model": "gemma4:e2b",
+    "timeoutSeconds": 60,
+    "numCtx": 4096,
+    "keepAlive": "30m",
+    "maxInputChars": 200,
+    "maxReplyChars": 400,
+    "historyTurns": 6
+}
