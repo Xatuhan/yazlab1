@@ -8,7 +8,8 @@ namespace YazLab.NpcDialogue.Tests
     {
         private const string ValidJson =
             "{\"baseUrl\":\"http://127.0.0.1:11434\",\"model\":\"gemma4:e2b\",\"timeoutSeconds\":60," +
-            "\"numCtx\":4096,\"keepAlive\":\"30m\",\"maxInputChars\":200,\"maxReplyChars\":400,\"historyTurns\":6}";
+            "\"numCtx\":4096,\"numPredict\":200,\"temperature\":0.5,\"keepAlive\":\"30m\"," +
+            "\"maxInputChars\":200,\"maxReplyChars\":400,\"historyTurns\":6}";
 
         private static string StreamingFile(string name) =>
             Path.Combine(Application.streamingAssetsPath, "NpcDialogue", name);
@@ -23,13 +24,16 @@ namespace YazLab.NpcDialogue.Tests
             Assert.AreEqual("http://127.0.0.1:11434", s.baseUrl);
             Assert.AreEqual("gemma4:e2b", s.model);
             Assert.AreEqual(4096, s.numCtx);
+            Assert.AreEqual(200, s.numPredict);
+            Assert.AreEqual(0.5f, s.temperature);
             Assert.AreEqual(6, s.historyTurns);
         }
 
-        [Test]
-        public void PromptFile_ExistsAndNotEmpty()
+        [TestCase("guard_prompt.txt")]
+        [TestCase("guard_reminder.txt")]
+        public void PromptFile_ExistsAndNotEmpty(string name)
         {
-            string prompt = File.ReadAllText(StreamingFile("guard_prompt.txt"));
+            string prompt = File.ReadAllText(StreamingFile(name));
 
             Assert.IsFalse(string.IsNullOrWhiteSpace(prompt));
         }
@@ -62,6 +66,10 @@ namespace YazLab.NpcDialogue.Tests
         [TestCase("\"numCtx\":4096", "\"numCtx\":-1")]
         [TestCase("\"maxInputChars\":200", "\"maxInputChars\":0")]
         [TestCase("\"historyTurns\":6", "\"historyTurns\":0")]
+        [TestCase("\"numPredict\":200", "\"numPredict\":0")]
+        [TestCase("\"temperature\":0.5", "\"temperature\":0")]
+        [TestCase("\"temperature\":0.5", "\"temperature\":3")]
+        [TestCase(",\"temperature\":0.5", "")]
         public void TryParse_InvalidNumbers_Fail(string from, string to)
         {
             Assert.IsFalse(OllamaSettings.TryParse(ValidJson.Replace(from, to), out _, out _));

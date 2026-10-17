@@ -6,14 +6,6 @@ namespace YazLab.NpcDialogue
     // Modelin JSON metnini NpcDecision'a çevirir. Yalnızca action ve reply okunur, metin asla çalıştırılmaz.
     public class NpcResponseParser : IResponseParser
     {
-        // JsonUtility yalnızca bu iki alanı doldurur; modelin eklediği fazla alanlar yok sayılır.
-        [Serializable]
-        private class RawReply
-        {
-            public string action;
-            public string reply;
-        }
-
         private readonly int _maxReplyChars;
 
         public NpcResponseParser(int maxReplyChars)
@@ -27,10 +19,11 @@ namespace YazLab.NpcDialogue
             if (string.IsNullOrWhiteSpace(content))
                 return false;
 
-            RawReply raw;
+            // ReplyJson'da yalnızca action ve reply var; modelin eklediği fazla alanlar yok sayılır.
+            ReplyJson raw;
             try
             {
-                raw = JsonUtility.FromJson<RawReply>(content);
+                raw = JsonUtility.FromJson<ReplyJson>(content);
             }
             catch (Exception)
             {

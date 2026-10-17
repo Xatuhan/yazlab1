@@ -11,6 +11,8 @@ namespace YazLab.NpcDialogue
         public string model;
         public int timeoutSeconds;
         public int numCtx;
+        public int numPredict;    // cevap en çok kaç token: gecikmeyi ve boyutu sınırlar
+        public float temperature; // düşük = kurallara sadık; 0,5 injection ölçümüyle seçildi
         public string keepAlive;
         public int maxInputChars;
         public int maxReplyChars;
@@ -46,10 +48,16 @@ namespace YazLab.NpcDialogue
                 error = "Ayar dosyasında model adı ya da keepAlive eksik.";
                 return false;
             }
-            if (s.timeoutSeconds <= 0 || s.numCtx <= 0 || s.maxInputChars <= 0
+            if (s.timeoutSeconds <= 0 || s.numCtx <= 0 || s.numPredict <= 0 || s.maxInputChars <= 0
                 || s.maxReplyChars <= 0 || s.historyTurns <= 0)
             {
                 error = "Ayar dosyasındaki sayılar sıfırdan büyük olmalı.";
+                return false;
+            }
+            // Eksik alan 0 olur; 0 her cevabı aynı yapar (PDF "dinamik yanıt"), 2 üstü anlamsız.
+            if (s.temperature <= 0f || s.temperature > 2f)
+            {
+                error = "Ayar dosyasındaki temperature 0 ile 2 arasında olmalı.";
                 return false;
             }
 

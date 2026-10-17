@@ -3,6 +3,8 @@
     "model": "gemma4:e2b",
     "timeoutSeconds": 60,
     "numCtx": 4096,
+    "numPredict": 200,
+    "temperature": 0.5,
     "keepAlive": "30m",
     "maxInputChars": 200,
     "maxReplyChars": 400,
