@@ -91,14 +91,16 @@ namespace YazLab.NpcDialogue
         }
 
         // En çok MaxResponseBytes okur; fazlası gelirse null döner.
+        // ConfigureAwait(false): bayt okumak ana iş parçacığı istemez; her parçada bir kare beklenmesin.
+        // Burada Unity API'si yok; sonuç SendAsync'te ana iş parçacığına bir kez döner.
         private static async Task<string> ReadLimitedAsync(HttpContent content, CancellationToken ct)
         {
-            using (Stream stream = await content.ReadAsStreamAsync())
+            using (Stream stream = await content.ReadAsStreamAsync().ConfigureAwait(false))
             using (var buffer = new MemoryStream())
             {
                 var chunk = new byte[8192];
                 int read;
-                while ((read = await stream.ReadAsync(chunk, 0, chunk.Length, ct)) > 0)
+                while ((read = await stream.ReadAsync(chunk, 0, chunk.Length, ct).ConfigureAwait(false)) > 0)
                 {
                     if (buffer.Length + read > MaxResponseBytes)
                         return null;
