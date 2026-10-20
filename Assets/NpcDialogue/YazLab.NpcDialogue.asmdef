@@ -1,7 +1,10 @@
 {
     "name": "YazLab.NpcDialogue",
     "rootNamespace": "YazLab.NpcDialogue",
-    "references": [],
+    "references": [
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
