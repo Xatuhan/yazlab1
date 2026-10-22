@@ -26,7 +26,6 @@ public class PlayerMovement : MonoBehaviour
             cameraTransform = Camera.main.transform;
         }
 
-        // Fare imlecini ekrana kilitle
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -34,8 +33,7 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         HandleGroundCheck();
-        HandleMovement();
-        HandleJumpAndGravity();
+        MovePlayer();
     }
 
     private void HandleGroundCheck()
@@ -47,9 +45,9 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void HandleMovement()
+    private void MovePlayer()
     {
-        // WASD Okuması
+        // 1. WASD Input Okuması
         float horizontal = 0f;
         float vertical = 0f;
 
@@ -62,6 +60,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+        Vector3 moveDirection = Vector3.zero;
 
         if (direction.magnitude >= 0.1f)
         {
@@ -72,20 +71,26 @@ public class PlayerMovement : MonoBehaviour
             Quaternion targetRotation = Quaternion.Euler(0f, targetAngle, 0f);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-            // Baktığı yöne doğru ilerlet
-            Vector3 moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            controller.Move(moveDirection.normalized * moveSpeed * Time.deltaTime);
+            // Baktığı yöne doğru yatay hareket vektörü
+            moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
         }
-    }
 
-    private void HandleJumpAndGravity()
-    {
+        // 2. Zıplama Kontrolü
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame && isGrounded)
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
 
+        // 3. Yerçekimini Hesapla
         playerVelocity.y += gravity * Time.deltaTime;
-        controller.Move(playerVelocity * Time.deltaTime);
+
+        // 4. TEK ÇAĞRI: Yatay Hız + Dikey Hızı Birleştirip Birlikte Uygula
+        Vector3 finalVelocity = (moveDirection.normalized * moveSpeed) + playerVelocity;
+        controller.Move(finalVelocity * Time.deltaTime);
+    }
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (hit.normal.y < 0.5f) // zemin değil, yan çarpma
+            Debug.Log($"Çarpılan: {hit.collider.name}", hit.collider);
     }
 }
