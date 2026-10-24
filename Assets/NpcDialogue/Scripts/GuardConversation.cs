@@ -24,6 +24,9 @@ namespace YazLab.NpcDialogue
         // Aynı anda tek istek: model meşgulken ikinci mesaj gönderilmez.
         public bool IsBusy { get; private set; }
 
+        // Bekçinin cevap verdiği toplam tur (bitiş ekranı için). Modelin hafızası ayrı: son 6 tur.
+        public int AnsweredTurns { get; private set; }
+
         public async Task<TurnOutcome> SendAsync(string playerText, CancellationToken ct)
         {
             if (IsBusy)
@@ -43,6 +46,7 @@ namespace YazLab.NpcDialogue
                     return TurnOutcome.Failed(LlmError.BadResponse); // bozuk tur geçmişe girmez
 
                 _history.AddTurn(text, decision);
+                AnsweredTurns++;
                 return TurnOutcome.Answered(decision);
             }
             finally

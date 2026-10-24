@@ -23,6 +23,7 @@ namespace YazLab.NpcDialogue
         private string _loadError; // null değilse NPC pasif, oyuncuya sistem mesajı gösterilir
 
         private bool _open;
+        private bool _finished; // allow ya da attack geldi: oyun bitti
         private bool[] _wasEnabled;
         private CursorLockMode _cursorLock;
         private bool _cursorVisible;
@@ -90,7 +91,8 @@ namespace YazLab.NpcDialogue
 
         private void Close()
         {
-            if (!_open)
+            // Oyun bittiyse bileşenler kapalı, imleç serbest kalır (bitiş ekranının düğmeleri için).
+            if (!_open || _finished)
                 return;
             _open = false;
             view.Hide();
@@ -105,7 +107,7 @@ namespace YazLab.NpcDialogue
         // async void yalnızca bu olay işleyicisinde; tüm gövde try/catch: hiçbir hata oyunu çökertmez.
         private async void OnSubmitted(string text)
         {
-            if (_conversation == null || _conversation.IsBusy)
+            if (_conversation == null || _conversation.IsBusy || _finished)
                 return;
 
             view.SetBusy(true);
@@ -136,7 +138,13 @@ namespace YazLab.NpcDialogue
             switch (outcome.Status)
             {
                 case TurnStatus.Answered:
-                    view.AddNpcLine(outcome.Decision.Reply); // allow/attack sonuçları Görev 5'te
+                    view.AddNpcLine(outcome.Decision.Reply);
+                    // allow → kapı + kazandın, attack → kaybettin, deny → konuşma sürer.
+                    if (NpcEvents.Publish(outcome.Decision, _conversation.AnsweredTurns))
+                    {
+                        _finished = true;
+                        view.Lock();
+                    }
                     break;
                 case TurnStatus.Rejected:
                     view.ShowSystem("Bu mesaj gönderilmedi: oyun komutu ya da izin verilmeyen işaret içeriyor.");

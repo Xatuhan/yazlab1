@@ -25,6 +25,7 @@ namespace YazLab.NpcDialogue
         private const int MaxLogLines = 100;
         private readonly Queue<string> _log = new Queue<string>();
         private bool _busy;
+        private bool _locked; // oyun bitti: giriş bir daha açılmaz
         private int _dots = -1;
 
         public event Action<string> Submitted;
@@ -84,12 +85,20 @@ namespace YazLab.NpcDialogue
         public void SetBusy(bool busy)
         {
             _busy = busy;
-            input.interactable = !busy;
-            sendButton.interactable = !busy;
+            input.interactable = !busy && !_locked;
+            sendButton.interactable = !busy && !_locked;
             thinkingText.gameObject.SetActive(busy);
             _dots = -1;
-            if (!busy && panel.activeSelf)
+            if (!busy && !_locked && panel.activeSelf)
                 input.ActivateInputField();
+        }
+
+        // Kapı açıldı ya da bekçi saldırdı: konuşma biter, son cevap ekranda kalır.
+        public void Lock()
+        {
+            _locked = true;
+            input.interactable = false;
+            sendButton.interactable = false;
         }
 
         private void Update()
@@ -107,7 +116,7 @@ namespace YazLab.NpcDialogue
 
         private void Submit()
         {
-            if (_busy || string.IsNullOrWhiteSpace(input.text))
+            if (_busy || _locked || string.IsNullOrWhiteSpace(input.text))
                 return;
             string text = input.text;
             input.text = string.Empty;

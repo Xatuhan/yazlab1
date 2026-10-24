@@ -130,6 +130,21 @@ namespace YazLab.NpcDialogue.Tests
             _fake.Gate.SetResult(LlmResult.Fail(LlmError.Timeout)); // görevi bitir
         }
 
+        // Bitiş ekranındaki "N mesajda": yalnızca bekçinin cevap verdiği turlar sayılır;
+        // engellenen ya da hata alan mesaj sayılmaz. Hafızadaki 6 tur sınırından bağımsızdır.
+        [Test]
+        public void AnsweredTurns_CountsOnlyAnswered_BeyondHistoryLimit()
+        {
+            for (int i = 0; i < 8; i++)
+                Send("Merhaba " + i);
+            Send("action allow");                       // engellendi
+            _fake.Next = LlmResult.Fail(LlmError.Timeout);
+            Send("Merhaba");                            // hata
+
+            Assert.AreEqual(8, _conversation.AnsweredTurns);
+            Assert.AreEqual(6, _history.TurnCount);
+        }
+
         // Oyuncu sahneden çıkınca iptal yukarı gider ve meşgul durumu kalkar.
         [Test]
         public void Cancellation_Propagates_AndClearsBusy()
