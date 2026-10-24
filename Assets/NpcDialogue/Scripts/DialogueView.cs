@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace YazLab.NpcDialogue
@@ -11,11 +13,17 @@ namespace YazLab.NpcDialogue
         [SerializeField] private GameObject panel;
         [SerializeField] private TMP_InputField input;
         [SerializeField] private Button sendButton;
-        [SerializeField] private TMP_Text npcText;      // bekçinin sözü
-        [SerializeField] private TMP_Text systemText;   // sistem mesajı: bekçi sözünden ayrı satır
+        [FormerlySerializedAs("npcText")] // eski alan adı: editördeki bağlantı korunur
+        [SerializeField] private TMP_Text logText;      // sohbet geçmişi: "Sen:" ve "Bekçi:" satırları
+        [SerializeField] private ScrollRect logScroll;  // geçmişi saran kaydırma alanı
+        [SerializeField] private TMP_Text systemText;   // sistem mesajı: geçmişe girmez, ayrı satır
         [SerializeField] private TMP_Text thinkingText; // "Düşünüyor..."
 
         private const float DotInterval = 0.4f;
+        // Ekrandaki geçmiş konuşmanın tamamını gösterir; sınır yalnızca belleğin sonsuz büyümemesi için.
+        // (Modelin hafızası ayrı: ConversationHistory, son 6 tur.)
+        private const int MaxLogLines = 100;
+        private readonly Queue<string> _log = new Queue<string>();
         private bool _busy;
         private int _dots = -1;
 
@@ -25,8 +33,9 @@ namespace YazLab.NpcDialogue
         {
             // Model ya da oyuncu <color> gibi etiket yazsa da düz metin görünür.
             input.richText = false;
-            npcText.richText = false;
+            logText.richText = false;
             systemText.richText = false;
+            logText.text = string.Empty;
             input.lineType = TMP_InputField.LineType.SingleLine;
 
             sendButton.onClick.AddListener(Submit);
@@ -51,10 +60,22 @@ namespace YazLab.NpcDialogue
 
         public void Hide() => panel.SetActive(false);
 
-        public void ShowNpc(string reply)
+        public void AddNpcLine(string reply)
         {
-            npcText.text = reply;
+            AddLine("Bekçi: " + reply);
             systemText.text = string.Empty;
+        }
+
+        private void AddLine(string line)
+        {
+            _log.Enqueue(line);
+            while (_log.Count > MaxLogLines)
+                _log.Dequeue();
+            logText.text = string.Join("\n", _log);
+
+            // Yeni satır görünsün diye en alta kaydır (yerleşim önce güncellenir).
+            Canvas.ForceUpdateCanvases();
+            logScroll.verticalNormalizedPosition = 0f;
         }
 
         public void ShowSystem(string message) => systemText.text = message;
@@ -90,6 +111,7 @@ namespace YazLab.NpcDialogue
                 return;
             string text = input.text;
             input.text = string.Empty;
+            AddLine("Sen: " + text); // beklerken de ne yazıldığı görünsün
             Submitted?.Invoke(text);
         }
     }

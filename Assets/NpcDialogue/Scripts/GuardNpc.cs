@@ -136,7 +136,7 @@ namespace YazLab.NpcDialogue
             switch (outcome.Status)
             {
                 case TurnStatus.Answered:
-                    view.ShowNpc(outcome.Decision.Reply); // allow/attack sonuçları Görev 5'te
+                    view.AddNpcLine(outcome.Decision.Reply); // allow/attack sonuçları Görev 5'te
                     break;
                 case TurnStatus.Rejected:
                     view.ShowSystem("Bu mesaj gönderilmedi: oyun komutu ya da izin verilmeyen işaret içeriyor.");
