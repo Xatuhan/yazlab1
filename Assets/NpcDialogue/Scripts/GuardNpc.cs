@@ -18,6 +18,7 @@ namespace YazLab.NpcDialogue
         private const string Folder = "NpcDialogue";
 
         private OllamaClient _client;
+        private OllamaSettings _settings; // hata mesajlarında model adı ve süre için
         private GuardConversation _conversation;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private string _loadError; // null değilse NPC pasif, oyuncuya sistem mesajı gösterilir
@@ -37,6 +38,7 @@ namespace YazLab.NpcDialogue
                 string json = File.ReadAllText(Path.Combine(dir, "ollama_settings.json"));
                 if (!OllamaSettings.TryParse(json, out OllamaSettings settings, out _loadError))
                     return;
+                _settings = settings;
 
                 string prompt = File.ReadAllText(Path.Combine(dir, "guard_prompt.txt"));
                 string reminder = File.ReadAllText(Path.Combine(dir, "guard_reminder.txt"));
@@ -47,7 +49,7 @@ namespace YazLab.NpcDialogue
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
-                _loadError = "Bekçinin ayar ya da metin dosyası okunamadı.";
+                _loadError = SystemMessages.FilesUnreadable;
             }
         }
 
@@ -124,7 +126,7 @@ namespace YazLab.NpcDialogue
             {
                 Debug.LogException(e);
                 if (view != null)
-                    view.ShowSystem("Beklenmeyen bir hata oldu. Tekrar deneyin.");
+                    view.ShowSystem(SystemMessages.Unexpected);
             }
             finally
             {
@@ -147,10 +149,10 @@ namespace YazLab.NpcDialogue
                     }
                     break;
                 case TurnStatus.Rejected:
-                    view.ShowSystem("Bu mesaj gönderilmedi: oyun komutu ya da izin verilmeyen işaret içeriyor.");
+                    view.ShowSystem(SystemMessages.InputRejected);
                     break;
                 case TurnStatus.Failed:
-                    view.ShowSystem("Bekçiye ulaşılamadı: " + outcome.Error); // Türkçe metinler Görev 6'da
+                    view.ShowSystem(SystemMessages.For(outcome.Error, _settings.model, _settings.timeoutSeconds));
                     break;
             }
         }
