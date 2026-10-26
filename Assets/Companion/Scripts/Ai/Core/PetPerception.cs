@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -24,39 +25,71 @@ namespace AI.Core
         public DoorTerminal DetectedTerminal { get; private set; }
 
         private Collider[] selfColliders;
-        private readonly HashSet<Collider> loggedLaserBlockers = new HashSet<Collider>();
+        private readonly HashSet<Collider> loggedLaserBlockers =
+            new HashSet<Collider>();
+
+        private DoorTerminal lastLoggedTerminal;
 
         private void Awake()
         {
             if (knowledgeMap == null)
-            {
                 knowledgeMap = GetComponent<KnowledgeMap>();
-            }
-            // Robotun kendi collider'larını kaydet (Kendini lazer/engel sanmasın)
+
             selfColliders = GetComponentsInChildren<Collider>();
         }
 
         private void Update()
         {
-            if (knowledgeMap == null || knowledgeMap.AllNodes == null || knowledgeMap.AllNodes.Count == 0) return;
+            if (knowledgeMap == null ||
+                knowledgeMap.AllNodes == null ||
+                knowledgeMap.AllNodes.Count == 0)
+                return;
 
             UpdateNodeVisibility();
-            DetectedTerminal = ScanForTerminals();
+
+            DoorTerminal detected = ScanForTerminals();
+
+            if (detected != lastLoggedTerminal)
+            {
+                if (detected != null)
+                {
+                    Debug.Log(
+                        $"[Perception Debug] Terminal algılandı: " +
+                        $"{detected.name} | Mesafe: " +
+                        $"{Vector3.Distance(transform.position, detected.transform.position):F2} m"
+                    );
+                }
+
+                lastLoggedTerminal = detected;
+            }
+
+            DetectedTerminal = detected;
         }
 
         public void ForceInitialScan()
         {
-            if (knowledgeMap == null || knowledgeMap.AllNodes == null || knowledgeMap.AllNodes.Count == 0) return;
+            if (knowledgeMap == null ||
+                knowledgeMap.AllNodes == null ||
+                knowledgeMap.AllNodes.Count == 0)
+                return;
 
             ExplorationNode startNode = GetNearestNode(transform.position);
-            if (startNode != null)
-            {
-                startNode.State = NodeState.Visited;
-                RevealNeighborNodes(startNode);
-            }
 
-            UpdateNodeVisibility(fullCircle: true);
+            if (startNode != null)
+                startNode.State = NodeState.Visited;
+
+            UpdateNodeVisibility();
+
             DetectedTerminal = ScanForTerminals();
+            lastLoggedTerminal = DetectedTerminal;
+
+            if (DetectedTerminal != null)
+            {
+                Debug.Log(
+                    $"[Perception Debug] İlk taramada terminal bulundu: " +
+                    $"{DetectedTerminal.name}"
+                );
+            }
         }
 
         private ExplorationNode GetNearestNode(Vector3 point)
@@ -67,6 +100,7 @@ namespace AI.Core
             foreach (var node in knowledgeMap.AllNodes)
             {
                 float d = Vector3.Distance(point, node.Position);
+
                 if (d < minDist)
                 {
                     minDist = d;
@@ -79,69 +113,58 @@ namespace AI.Core
 
         public void UpdateNodeVisibility(bool fullCircle = false)
         {
-            // Tünellerde tavan çarpmasını önlemek için 0.2m göz yüksekliği
-            Vector3 eyePos = eyeTransform != null ? eyeTransform.position : transform.position + Vector3.up * 0.2f;
+            Vector3 eyePos = eyeTransform != null
+                ? eyeTransform.position
+                : transform.position + Vector3.up * 0.2f;
 
             foreach (var node in knowledgeMap.AllNodes)
             {
-                if (node.State == NodeState.Visited || node.State == NodeState.Checked) continue;
+                if (node.State == NodeState.Visited ||
+                    node.State == NodeState.Checked)
+                    continue;
 
-                Vector3 dirToNode = (node.Position + Vector3.up * 0.2f) - eyePos;
+                Vector3 dirToNode =
+                    (node.Position + Vector3.up * 0.2f) - eyePos;
+
                 float dist = dirToNode.magnitude;
 
-                if (dist <= viewDistance)
+                if (dist > viewDistance)
+                    continue;
+
+                float angle = Vector3.Angle(transform.forward, dirToNode);
+
+                if (!fullCircle && angle > fieldOfViewAngle * 0.5f)
+                    continue;
+
+                bool isBlockedByWall = Physics.Raycast(
+                    eyePos,
+                    dirToNode.normalized,
+                    dist,
+                    visionObstacleMask,
+                    QueryTriggerInteraction.Ignore
+                );
+
+                bool isBlockedByLaser = Physics.Raycast(
+                    eyePos,
+                    dirToNode.normalized,
+                    out RaycastHit laserHit,
+                    dist,
+                    laserMask,
+                    QueryTriggerInteraction.Collide
+                );
+
+                if (isBlockedByLaser &&
+                    loggedLaserBlockers.Add(laserHit.collider))
                 {
-                    float angle = Vector3.Angle(transform.forward, dirToNode);
-                    if (fullCircle || angle <= fieldOfViewAngle * 0.5f)
-                    {
-                        // 1. Görüş duvar/engel tarafından kesiliyor mu?
-                        bool isBlockedByWall = Physics.Raycast(eyePos, dirToNode.normalized, dist, visionObstacleMask, QueryTriggerInteraction.Ignore);
-
-                        // 2. Araya bir Lazer Trigger'ı giriyor mu?
-                        bool isBlockedByLaser = Physics.Raycast(eyePos, dirToNode.normalized, out RaycastHit laserHit, dist, laserMask, QueryTriggerInteraction.Collide);
-
-                        if (isBlockedByLaser && loggedLaserBlockers.Add(laserHit.collider))
-                        {
-                            Debug.Log($"[Perception Log]: Lazer engeline takıldı -> Obj: {laserHit.collider.name}, Layer: {LayerMask.LayerToName(laserHit.collider.gameObject.layer)}");
-                        }
-
-                        if (!isBlockedByWall && !isBlockedByLaser)
-                        {
-                            node.State = NodeState.Seen;
-                        }
-                    }
+                    Debug.Log(
+                        $"[Perception Log] Lazer engeli: " +
+                        $"{laserHit.collider.name} | Layer: " +
+                        $"{LayerMask.LayerToName(laserHit.collider.gameObject.layer)}"
+                    );
                 }
-            }
 
-            // Robotun üzerinde durduğu düğümün açık NavMesh komşularını otomatik aç (Tünel geçişleri için)
-            ExplorationNode currentNode = GetNearestNode(transform.position);
-            if (currentNode != null && Vector3.Distance(transform.position, currentNode.Position) <= 1.2f)
-            {
-                RevealNeighborNodes(currentNode);
-            }
-        }
-
-        /// <summary>
-        /// Dar havalandırma tünellerinde Raycast tavan veya duvar açısına takılsa bile 
-        /// NavMesh üzerinde doğrudan yürünebilir komşu düğümleri Seen (Yeşil) yapar.
-        /// </summary>
-        private void RevealNeighborNodes(ExplorationNode node)
-        {
-            if (node == null || node.Neighbors == null) return;
-
-            NavMeshPath path = new NavMeshPath();
-            foreach (var neighbor in node.Neighbors)
-            {
-                if (neighbor.State == NodeState.Unknown)
-                {
-                    if (NavMesh.CalculatePath(node.Position, neighbor.Position, NavMesh.AllAreas, path))
-                    {
-                        if (path.status == NavMeshPathStatus.PathComplete)
-                        {
-                            neighbor.State = NodeState.Seen;
-                        }
-                    }
-                }
+                if (!isBlockedByWall && !isBlockedByLaser)
+                    node.State = NodeState.Seen;
             }
         }
 
@@ -152,29 +175,77 @@ namespace AI.Core
 
         private DoorTerminal ScanForTerminals(Door requiredDoor = null)
         {
-            Vector3 eyePos = eyeTransform != null ? eyeTransform.position : transform.position + Vector3.up * 0.3f;
-            Collider[] hits = Physics.OverlapSphere(transform.position, viewDistance);
+            Vector3 eyePos = eyeTransform != null
+                ? eyeTransform.position
+                : transform.position + Vector3.up * 0.3f;
+
+            Collider[] hits = Physics.OverlapSphere(
+                transform.position,
+                viewDistance
+            );
 
             foreach (var hit in hits)
             {
-                if (IsSelfCollider(hit)) continue;
+                if (IsSelfCollider(hit))
+                    continue;
 
-                DoorTerminal terminal = hit.GetComponentInParent<DoorTerminal>();
-                if (terminal == null || terminal.IsUsed) continue;
-                if (requiredDoor != null && terminal.TargetDoor != requiredDoor) continue;
+                DoorTerminal terminal =
+                    hit.GetComponentInParent<DoorTerminal>();
 
-                Vector3 targetCenter = terminal.transform.position + Vector3.up * 0.5f;
+                if (terminal == null || terminal.IsUsed)
+                    continue;
+
+                if (requiredDoor != null &&
+                    terminal.TargetDoor != requiredDoor)
+                    continue;
+
+                float distToTerminal = Vector3.Distance(
+                    transform.position,
+                    terminal.transform.position
+                );
+
+                // Yakın terminal: görüş açısı ve raycast gerektirmeden algıla.
+                if (distToTerminal <= 3.0f)
+                {
+                    Debug.Log(
+                        $"[Perception Debug] Yakın terminal bulundu: " +
+                        $"{terminal.name} | Mesafe: {distToTerminal:F2} m"
+                    );
+
+                    return terminal;
+                }
+
+                Vector3 targetCenter =
+                    terminal.transform.position + Vector3.up * 0.5f;
+
                 Vector3 dir = targetCenter - eyePos;
                 float dist = dir.magnitude;
-                if (dist <= 0f || dist > viewDistance) continue;
-                if (Vector3.Angle(transform.forward, dir) > fieldOfViewAngle * 0.5f) continue;
 
-                if (Physics.Raycast(eyePos, dir.normalized, out RaycastHit rayHit, dist,
-                    visionObstacleMask, QueryTriggerInteraction.Ignore))
+                if (dist <= 0f || dist > viewDistance)
+                    continue;
+
+                if (Vector3.Angle(transform.forward, dir) >
+                    fieldOfViewAngle * 0.5f)
+                    continue;
+
+                // Duvar görüşü kapatıyorsa terminali algılama.
+                if (Physics.Raycast(
+                    eyePos,
+                    dir.normalized,
+                    out RaycastHit rayHit,
+                    dist,
+                    visionObstacleMask,
+                    QueryTriggerInteraction.Ignore))
                 {
-                    if (rayHit.transform != terminal.transform && !rayHit.transform.IsChildOf(terminal.transform))
+                    if (rayHit.transform != terminal.transform &&
+                        !rayHit.transform.IsChildOf(terminal.transform))
                         continue;
                 }
+
+                Debug.Log(
+                    $"[Perception Debug] Görüş alanında terminal bulundu: " +
+                    $"{terminal.name} | Mesafe: {distToTerminal:F2} m"
+                );
 
                 return terminal;
             }
@@ -184,17 +255,22 @@ namespace AI.Core
 
         private bool IsSelfCollider(Collider col)
         {
-            if (selfColliders == null) return false;
+            if (selfColliders == null)
+                return false;
+
             foreach (var self in selfColliders)
             {
-                if (self == col) return true;
+                if (self == col)
+                    return true;
             }
+
             return false;
         }
 
         public void ClearDetectedTerminal()
         {
             DetectedTerminal = null;
+            lastLoggedTerminal = null;
         }
     }
 }

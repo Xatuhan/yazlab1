@@ -55,14 +55,14 @@ namespace AI.States
                 perception.ForceInitialScan();
             }
 
-            // 1. Þalter doðrudan verildiyse (ilk kapý/þalter) anýnda kilitlen!
+            // 1. Þalter doðrudan verildiyse anýnda kilitlen
             if (explicitTerminal != null)
             {
                 LockOnToTargetTerminal(explicitTerminal);
                 return;
             }
 
-            // Door komutunda yalnýzca bu kapýya baðlý terminali hedefle.
+            // Door komutunda yalnýzca bu kapýya baðlý terminali hedefle
             currentPhase = Phase.ExploringFrontier;
             if (explicitDoor != null && perception != null)
             {
@@ -78,21 +78,42 @@ namespace AI.States
 
         public void Update()
         {
-            // 1. Keþif sýrasýnda sadece istenen kapýnýn terminaline kilitlen.
+            // 1. Keþif sýrasýnda görülen kullanýlmamýþ terminale öncelik ver.
             if (currentPhase == Phase.ExploringFrontier && perception != null)
             {
-                DoorTerminal visibleTerminal = explicitDoor != null
-                    ? perception.FindVisibleTerminalForDoor(explicitDoor)
-                    : perception.DetectedTerminal;
+                DoorTerminal visibleTerminal = null;
 
-                if (visibleTerminal != null && !failedTerminals.Contains(visibleTerminal))
+                // Önce özellikle hedeflenen kapýnýn terminalini ara.
+                if (explicitDoor != null)
+                    visibleTerminal = perception.FindVisibleTerminalForDoor(explicitDoor);
+
+                // Eþleþen terminal bulunamazsa, görüþteki diðer terminali kontrol et.
+                if (visibleTerminal == null)
+                    visibleTerminal = perception.DetectedTerminal;
+
+                if (visibleTerminal != null)
                 {
-                    LockOnToTargetTerminal(visibleTerminal);
-                    return;
+                    Debug.Log(
+                        $"[Investigate Debug] Terminal bulundu: {visibleTerminal.name} | " +
+                        $"Kullanýlmýþ: {visibleTerminal.IsUsed} | " +
+                        $"Baþarýsýz listesinde: {failedTerminals.Contains(visibleTerminal)}"
+                    );
+
+                    if (!visibleTerminal.IsUsed)
+                    {
+                        Debug.Log(
+                            $"[Investigate Debug] Terminal yeniden hedefleniyor: " +
+                            $"{visibleTerminal.name}"
+                        );
+
+                        failedTerminals.Remove(visibleTerminal);
+                        LockOnToTargetTerminal(visibleTerminal);
+                        return;
+                    }
                 }
             }
 
-            // 2. Keþif Hareketi
+            // 2. Keþif hareketi
             if (currentPhase == Phase.ExploringFrontier)
             {
                 if (brain.Agent.pathPending) return;
@@ -100,7 +121,8 @@ namespace AI.States
 
                 if (!brain.Agent.hasPath)
                 {
-                    if (Time.time - targetIssuedAt >= 1f) RejectCurrentTarget("no route was created");
+                    if (Time.time - targetIssuedAt >= 1f)
+                        RejectCurrentTarget("no route was created");
                     return;
                 }
 
@@ -110,14 +132,16 @@ namespace AI.States
                     return;
                 }
 
-                float arrivalDistance = Mathf.Max(0.6f, brain.Agent.stoppingDistance + 0.15f);
+                float arrivalDistance =
+                    Mathf.Max(0.6f, brain.Agent.stoppingDistance + 0.15f);
+
                 if (brain.Agent.remainingDistance <= arrivalDistance)
                 {
                     CompleteFrontierVisit();
                     MoveToNextFrontier();
                 }
             }
-            // 3. Þaltere yönelme, eriþilebilir yaklaþým noktalarýný deneme ve etkileþim.
+            // 3. Þaltere yönelme ve etkileþim
             else if (currentPhase == Phase.LockOnTerminal && targetTerminal != null)
             {
                 UpdateTerminalApproach();
@@ -136,7 +160,11 @@ namespace AI.States
             Vector3 robotFlat = new Vector3(brain.transform.position.x, 0f, brain.transform.position.z);
             Vector3 terminalFlat = new Vector3(targetTerminal.transform.position.x, 0f, targetTerminal.transform.position.z);
             float flatDistance = Vector3.Distance(robotFlat, terminalFlat);
-            if (flatDistance <= 1.5f)
+
+            // Robot þaltere 2.2m yaklaþtýysa VEYA NavMesh sýnýrýnýn sonuna geldiyse (remainingDistance <= 0.4m) etkileþimi baþlat
+            bool reachedNavMeshLimit = brain.Agent.hasPath && brain.Agent.remainingDistance <= 0.4f;
+
+            if (flatDistance <= 1.1f || reachedNavMeshLimit)
             {
                 ActivateTargetTerminal();
                 return;
@@ -187,15 +215,21 @@ namespace AI.States
         {
             if (currentTargetNode == null) return;
 
-            int unknownBeforeScan = CountUnknownNeighbors(currentTargetNode);
-            if (perception != null) perception.UpdateNodeVisibility(true);
+            if (perception != null)
+                perception.UpdateNodeVisibility();
 
-            currentTargetNode.State = NodeState.Visited;
             currentTargetNode.VisitCount++;
+
             int unknownAfterScan = CountUnknownNeighbors(currentTargetNode);
 
-            if (unknownAfterScan == 0 || unknownAfterScan >= unknownBeforeScan)
+            if (unknownAfterScan == 0)
+            {
                 currentTargetNode.State = NodeState.Checked;
+            }
+            else
+            {
+                currentTargetNode.State = NodeState.Visited;
+            }
         }
 
         private int CountUnknownNeighbors(ExplorationNode node)
@@ -210,8 +244,12 @@ namespace AI.States
         {
             if (currentTargetNode != null)
             {
-                currentTargetNode.State = NodeState.Checked;
-                Debug.LogWarning($"[Robot AI]: Frontier skipped ({reason}): {currentTargetNode.Position}");
+                currentTargetNode.VisitCount++;
+
+                Debug.LogWarning(
+                    $"[Robot AI]: Frontier geçici olarak atlandý ({reason}): " +
+                    $"{currentTargetNode.Position} | Ziyaret cezasý: {currentTargetNode.VisitCount}"
+                );
             }
 
             currentTargetNode = null;
@@ -233,26 +271,36 @@ namespace AI.States
                 ExplorationNode nextNode = explorer.EvaluateNextFrontier(brain.transform.position);
                 if (nextNode == null) break;
 
-                // EKSTRA KORUMA: Rota çizgisi üzerinde Lazer var mý kontrol et
                 if (IsPathCrossingLaser(brain.transform.position, nextNode.Position))
                 {
-                    Debug.LogWarning($"[Robot AI]: Lazer tehlikesi içeren rota elendi: {nextNode.Position}");
-                    nextNode.State = NodeState.Checked;
+                    Debug.LogWarning($"[Robot AI]: Lazer nedeniyle hedef þimdilik atlandý: {nextNode.Position}");
+                    nextNode.VisitCount++;
                     continue;
                 }
 
                 currentTargetNode = nextNode;
                 targetIssuedAt = Time.time;
-                if (brain.Agent != null && brain.Agent.isOnNavMesh &&
-                    brain.Agent.SetDestination(currentTargetNode.Position))
-                    return;
+                if (brain.Agent != null && brain.Agent.isOnNavMesh)
+                {
+                    bool destinationSet = brain.Agent.SetDestination(currentTargetNode.Position);
 
-                currentTargetNode.State = NodeState.Checked;
+                    Debug.Log(
+                        $"[Frontier Debug] Hedef: {currentTargetNode.Position} | " +
+                        $"NavMesh: {brain.Agent.isOnNavMesh} | " +
+                        $"SetDestination: {destinationSet} | " +
+                        $"PathStatus: {brain.Agent.pathStatus}"
+                    );
+
+                    if (destinationSet)
+                        return;
+                }
+
+                Debug.LogWarning($"[Frontier Debug] Hedefe rota atanamadý; düðüm Checked yapýlmadý: {currentTargetNode.Position}");
                 currentTargetNode = null;
             }
 
             if (perception != null)
-                perception.UpdateNodeVisibility(fullCircle: true);
+                perception.UpdateNodeVisibility();
 
             ExplorationNode finalCandidate = explorer.EvaluateNextFrontier(brain.transform.position);
             if (finalCandidate != null && !IsPathCrossingLaser(brain.transform.position, finalCandidate.Position) &&
@@ -264,46 +312,102 @@ namespace AI.States
                 return;
             }
 
-            bool unknownRemains = false;
+            int unknownCount = 0;
+            int unknownWithKnownNeighbor = 0;
+            int isolatedUnknownCount = 0;
+            int unknownWithAnyNeighbor = 0;
+            int unknownWithUnknownNeighbor = 0;
+
             if (knowledgeMap != null)
             {
                 foreach (ExplorationNode node in knowledgeMap.AllNodes)
                 {
-                    if (node.State == NodeState.Unknown) { unknownRemains = true; break; }
+                    if (node.State != NodeState.Unknown)
+                        continue;
+
+                    unknownCount++;
+
+                    if (node.Neighbors.Count > 0)
+                        unknownWithAnyNeighbor++;
+
+                    bool hasKnownNeighbor = false;
+                    bool hasUnknownNeighbor = false;
+
+                    foreach (ExplorationNode neighbor in node.Neighbors)
+                    {
+                        if (neighbor.State == NodeState.Seen || neighbor.State == NodeState.Visited)
+                        {
+                            hasKnownNeighbor = true;
+                        }
+
+                        if (neighbor.State == NodeState.Unknown)
+                        {
+                            hasUnknownNeighbor = true;
+                        }
+                    }
+
+                    if (hasKnownNeighbor) unknownWithKnownNeighbor++;
+                    if (hasUnknownNeighbor) unknownWithUnknownNeighbor++;
+                    if (!hasKnownNeighbor) isolatedUnknownCount++;
                 }
             }
-            Debug.LogWarning(unknownRemains
-                ? "[Robot AI]: Bilinmeyen alan kaldý ancak bilinen NavMesh üzerinden eriþilebilir frontier yok; takip moduna dönülüyor."
-                : "[Robot AI]: Keþfedilebilir frontier kalmadý; takip moduna dönülüyor.");
-            brain.StateMachine.ChangeState(new MoveToTargetState(brain));
+
+            Debug.LogWarning(
+                $"[Frontier Graph Diagnosis] " +
+                $"Unknown: {unknownCount} | " +
+                $"Herhangi bir komþusu olan: {unknownWithAnyNeighbor} | " +
+                $"Unknown komþusu olan: {unknownWithUnknownNeighbor} | " +
+                $"Seen/Visited komþusu olan: {unknownWithKnownNeighbor} | " +
+                $"Bilinen komþusu olmayan: {isolatedUnknownCount}"
+            );
         }
 
-        /// <summary>
-        /// Çizilen NavMesh rotasýnýn lazer katmaný ile çakýþýp çakýþmadýðýný 0.25m küre ile tarar.
-        /// Erken tetiklenmeyi önlemek için yarýçap hassas (0.25m) tutulmuþtur.
-        /// </summary>
         private bool IsPathCrossingLaser(Vector3 start, Vector3 target)
         {
             NavMeshPath path = new NavMeshPath();
-            if (NavMesh.CalculatePath(start, target, NavMesh.AllAreas, path))
+
+            if (!NavMesh.CalculatePath(start, target, NavMesh.AllAreas, path))
+                return true;
+
+            if (path.status != NavMeshPathStatus.PathComplete)
+                return true;
+
+            int laserLayer = LayerMask.GetMask("Laser");
+
+            if (laserLayer == 0)
             {
-                int laserLayer = LayerMask.GetMask("Laser");
-                if (laserLayer == 0) return false;
+                Debug.LogWarning("[Robot AI] Laser layer bulunamadý.");
+                return false;
+            }
 
-                for (int i = 0; i < path.corners.Length - 1; i++)
+            const float checkRadius = 0.15f;
+            const float heightOffset = 0.3f;
+
+            for (int i = 0; i < path.corners.Length - 1; i++)
+            {
+                Vector3 p1 = path.corners[i] + Vector3.up * heightOffset;
+                Vector3 p2 = path.corners[i + 1] + Vector3.up * heightOffset;
+
+                Vector3 delta = p2 - p1;
+                float distance = delta.magnitude;
+
+                if (distance <= 0.001f)
+                    continue;
+
+                if (Physics.SphereCast(
+                    p1,
+                    checkRadius,
+                    delta / distance,
+                    out RaycastHit hit,
+                    distance,
+                    laserLayer,
+                    QueryTriggerInteraction.Collide))
                 {
-                    Vector3 p1 = path.corners[i] + Vector3.up * 0.3f;
-                    Vector3 p2 = path.corners[i + 1] + Vector3.up * 0.3f;
-                    Vector3 dir = (p2 - p1).normalized;
-                    float dist = Vector3.Distance(p1, p2);
-
-                    // Erken tetiklenme olmasýn diye yarýçap tam agent gövde hassasiyetinde (0.25m)
-                    if (Physics.SphereCast(p1, 0.25f, dir, out RaycastHit hit, dist, laserLayer, QueryTriggerInteraction.Collide))
-                    {
-                        return true;
-                    }
+                    Debug.Log($"[Robot AI] Rota elendi. Lazer: {hit.collider.name}, Konum: {hit.point}");
+                    return true;
                 }
             }
+
             return false;
         }
 
@@ -325,37 +429,56 @@ namespace AI.States
         private bool TryNextTerminalApproach()
         {
             if (targetTerminal == null || brain.Agent == null || !brain.Agent.isOnNavMesh)
+            {
+                Debug.LogWarning("[Terminal Debug] Erken çýkýþ: terminal, agent veya NavMesh kontrolü baþarýsýz.");
                 return false;
+            }
 
-            Vector3 preferred = brain.transform.position - targetTerminal.transform.position;
+            // Terminalin ön yönünü al (ön yüzey +X / right ise)
+            Vector3 preferred = targetTerminal.transform.right;
             preferred.y = 0f;
-            if (preferred.sqrMagnitude < 0.001f) preferred = -brain.transform.forward;
+
+            if (preferred.sqrMagnitude < 0.001f)
+                preferred = -brain.transform.forward;
+
             preferred.y = 0f;
             preferred.Normalize();
 
-            float[] angleOffsets = { 0f, 45f, -45f, 90f, -90f, 135f, -135f, 180f };
+            // Duvara monte edilen þalterlerde arka açýlarý (135, 180 vb.) çýkarýp ön açýlara odaklanýyoruz
+            float[] angleOffsets = { 0f, 30f, -30f, 60f, -60f, 90f, -90f };
             NavMeshPath candidatePath = new NavMeshPath();
+
             while (terminalApproachIndex < angleOffsets.Length)
             {
                 float angle = angleOffsets[terminalApproachIndex++];
                 Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * preferred;
-                Vector3 candidate = targetTerminal.transform.position + direction * 1.25f;
+                Vector3 candidate = targetTerminal.transform.position + direction * 1.0f;
 
-                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 1.5f, NavMesh.AllAreas))
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
+                {
+                    Debug.LogWarning($"[Terminal Debug] NavMesh noktasý bulunamadý: {targetTerminal.name} | Aday: {candidate}");
                     continue;
+                }
 
                 if (!NavMesh.CalculatePath(brain.Agent.nextPosition, hit.position, NavMesh.AllAreas, candidatePath) ||
                     candidatePath.status != NavMeshPathStatus.PathComplete)
+                {
+                    Debug.LogWarning($"[Terminal Debug] Tam rota oluþturulamadý: {targetTerminal.name} | Aday: {hit.position}");
                     continue;
+                }
 
-                // Þaltere yaklaþýrken de rota üzerinde lazer var mý denetle
-                if (IsPathCrossingLaser(brain.Agent.nextPosition, hit.position))
-                    continue;
+                // ÖNEMLÝ: Þaltere kilitlenildiðinde son yaklaþýmdaki IsPathCrossingLaser kontrolü yapýlmaz.
+                // Robot þalteri kapatmak için lazerli bölgenin sýnýrýna girmelidir.
 
                 brain.Agent.ResetPath();
-                if (!brain.Agent.SetDestination(hit.position))
-                    continue;
 
+                if (!brain.Agent.SetDestination(hit.position))
+                {
+                    Debug.LogWarning($"[Terminal Debug] SetDestination baþarýsýz: {targetTerminal.name} | Konum: {hit.position}");
+                    continue;
+                }
+
+                Debug.Log($"[Terminal Debug] Yaklaþma rotasý verildi: {targetTerminal.name} | Hedef: {hit.position}");
                 terminalPathIssuedAt = Time.time;
                 terminalLastProgressAt = Time.time;
                 terminalLastRemainingDistance = float.PositiveInfinity;
