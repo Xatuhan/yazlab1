@@ -1,40 +1,33 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class DoorTerminal : MonoBehaviour
 {
-    [Header("Kapý Baðlantýsý")]
-    [Tooltip("Bu bilgisayarýn/terminalin açacaðý kapý")]
-    [SerializeField] private Door targetDoor;
+    [Header("Hedef BaÄŸlantÄ±sÄ±")]
+    [Tooltip("Bu terminalin tetikleyeceÄŸi nesne (Door, LaserGroup vb.)")]
+    [SerializeField] private MonoBehaviour targetToActivate;
 
     [Header("Terminal Durumu")]
     [SerializeField] private bool isUsed = false;
 
-    private void OnTriggerEnter(Collider other)
-    {
-        // Terminale henüz basýlmadýysa ve deðen kiþi Oyuncu veya Robot ise
-        if (!isUsed && (other.CompareTag("Player") || other.name.Contains("Robot") || other.GetComponent<RobotBrain>() != null))
-        {
-            ActivateTerminal();
-        }
-    }
+    public bool IsUsed => isUsed;
+    public Door TargetDoor => targetToActivate as Door;
+
+    public static readonly List<DoorTerminal> All = new List<DoorTerminal>();
+    private void OnEnable() => All.Add(this);
+    private void OnDisable() => All.Remove(this);
 
     public void ActivateTerminal()
     {
         if (isUsed) return;
-
         isUsed = true;
-        Debug.Log($"<color=cyan>[Terminal]: Bilgisayar butonuna basýldý! Kapý tetikleniyor...</color>");
+        Debug.Log("<color=cyan>[Terminal]: Bilgisayar butonuna basÄ±ldÄ±! Hedef tetikleniyor...</color>");
 
-        // Baðlý olan kapýyý aç
-        if (targetDoor != null)
-        {
-            targetDoor.UnlockAndOpen();
-        }
+        if (targetToActivate != null && targetToActivate is IActivatable activatable)
+            activatable.Activate();
+        else if (targetToActivate != null)
+            Debug.LogWarning($"[Terminal]: {targetToActivate.name} nesnesi IActivatable arayÃ¼zÃ¼nÃ¼ iÃ§ermiyor!");
         else
-        {
-            Debug.LogWarning("[Terminal]: Hedef kapý (Target Door) atanmamýþ!");
-        }
-
-        // Ýsteðe baðlý: Terminal ekranýnýn rengini yeþile çevirme / ses çalma
+            Debug.LogWarning("[Terminal]: Hedef nesne (Target To Activate) atanmamÄ±ÅŸ!");
     }
 }

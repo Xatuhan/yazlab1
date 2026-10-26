@@ -27,6 +27,8 @@ public class PlayerInteraction : MonoBehaviour
         if (mainCamera == null) mainCamera = Camera.main;
 
         // Ekranýn tam ortasýndan (bakýþ yönünden) ýþýn fýrlat
+        if (mainCamera == null) return;
+
         Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green, 2.0f);
@@ -35,6 +37,19 @@ public class PlayerInteraction : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, ~ignoreLayers, QueryTriggerInteraction.Collide))
         {
             Debug.Log("Iþýnýn çarptýðý obje: " + hit.collider.name);
+
+            Door door = hit.collider.GetComponentInParent<Door>();
+            if (door == null)
+            {
+                DoorTerminal terminal = hit.collider.GetComponentInParent<DoorTerminal>();
+                if (terminal != null) door = terminal.TargetDoor;
+            }
+
+            if (door != null)
+            {
+                door.CommandRobotToInvestigate();
+                return;
+            }
 
             AirVents vent = hit.collider.GetComponentInParent<AirVents>();
             if (vent != null)

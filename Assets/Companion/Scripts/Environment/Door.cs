@@ -1,23 +1,23 @@
 using System;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.InputSystem;
 
-public class Door : MonoBehaviour
+public class Door : MonoBehaviour, IActivatable
 {
     public bool IsOpen { get; private set; } = false;
 
-    [Header("Bileþenler & Baðlantýlar")]
+    // IActivatable arayï¿½zï¿½nï¿½n ï¿½artï¿½:
+    public bool IsActivated => IsOpen;
+
+    [Header("Bileï¿½enler & Baï¿½lantï¿½lar")]
     [SerializeField] private NavMeshObstacle navMeshObstacle;
     [SerializeField] private Animator doorAnimator;
-
-    private bool isPlayerInRange = false;
 
     public static event Action<Door> OnDoorOpened;
 
     private void Start()
     {
-        Debug.Log($"<color=yellow>{gameObject.name} üzerindeki Door script'i aktif ve çalýþýyor!</color>");
+        Debug.Log($"<color=yellow>{gameObject.name} ï¿½zerindeki Door script'i aktif ve ï¿½alï¿½ï¿½ï¿½yor!</color>");
     }
 
     private void Awake()
@@ -25,46 +25,40 @@ public class Door : MonoBehaviour
         if (navMeshObstacle == null) navMeshObstacle = GetComponent<NavMeshObstacle>();
     }
 
-    private void Update()
-    {
-        // Yeni Input System ile 'E' tuþu kontrolü
-        bool isEPressed = Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame;
-
-        if (isPlayerInRange && !IsOpen && isEPressed)
-        {
-            TriggerRobotToInvestigate();
-        }
-    }
-
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerInRange = true;
-            Debug.Log("<color=white>Kapýyý açmak için [E] tuþuna bas.</color>");
-        }
+        if (IsPlayerCollider(other))
+            Debug.Log("[Door] Look at the door and press E to send the robot.");
     }
 
-    private void OnTriggerExit(Collider other)
+    private static bool IsPlayerCollider(Collider other)
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerInRange = false;
-        }
+        return other.CompareTag("Player") || other.GetComponentInParent<PlayerInteraction>() != null;
     }
 
-    private void TriggerRobotToInvestigate()
+    public void CommandRobotToInvestigate()
     {
+        if (IsOpen) return;
+
         RobotBrain robot = FindAnyObjectByType<RobotBrain>();
         if (robot != null)
         {
-            Debug.Log("<color=cyan>[Oyuncu]: Robota kapý çevresini araþtýrmasý emredildi!</color>");
+            Debug.Log("<color=cyan>[Oyuncu]: Robota kapï¿½ ï¿½evresini araï¿½tï¿½rmasï¿½ emredildi!</color>");
             robot.StateMachine.ChangeState(new AI.States.PetInvestigateState(robot, this));
         }
         else
         {
-            Debug.LogWarning("[Kapý]: Sahnede RobotBrain bulunamadý!");
+            Debug.LogWarning("[Kapï¿½]: Sahnede RobotBrain bulunamadï¿½!");
         }
+    }
+
+    /// <summary>
+    /// IActivatable arayï¿½zï¿½ tetikleme metodu. 
+    /// Genel terminal/ï¿½alter mekanizmasï¿½ burayï¿½ ï¿½aï¿½ï¿½rï¿½r.
+    /// </summary>
+    public void Activate()
+    {
+        UnlockAndOpen();
     }
 
     public void UnlockAndOpen()
@@ -72,16 +66,16 @@ public class Door : MonoBehaviour
         if (IsOpen) return;
 
         IsOpen = true;
-        Debug.Log($"<color=green>[Kapý]: Açýlýyor!</color>");
+        Debug.Log($"<color=green>[Kapï¿½]: Aï¿½ï¿½lï¿½yor!</color>");
 
-        // 1. NavMesh üzerindeki yapay zeka engelini kaldýr
+        // 1. NavMesh ï¿½zerindeki yapay zeka engelini kaldï¿½r
         if (navMeshObstacle != null)
         {
             navMeshObstacle.enabled = false;
         }
 
-        // 2. Prefab hiyerarþisindeki TÜM katý (Is Trigger = false) fizik collider'larýný kapat
-        // transform.root sayesinde script ister panelde ister ana objede olsun tüm katý engelleri temizler
+        // 2. Prefab hiyerarï¿½isindeki Tï¿½M katï¿½ (Is Trigger = false) fizik collider'larï¿½nï¿½ kapat
+        // transform.root sayesinde script ister panelde ister ana objede olsun tï¿½m katï¿½ engelleri temizler
         Collider[] allColliders = transform.root.GetComponentsInChildren<Collider>();
         foreach (Collider col in allColliders)
         {
@@ -91,7 +85,7 @@ public class Door : MonoBehaviour
             }
         }
 
-        // 3. Görsel açýlma efekti / Animasyon
+        // 3. Gï¿½rsel aï¿½ï¿½lma efekti / Animasyon
         if (doorAnimator != null)
         {
             doorAnimator.SetTrigger("Open");
@@ -104,3 +98,4 @@ public class Door : MonoBehaviour
         OnDoorOpened?.Invoke(this);
     }
 }
+
