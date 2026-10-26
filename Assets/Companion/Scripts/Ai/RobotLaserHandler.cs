@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 namespace AI
@@ -7,14 +8,29 @@ namespace AI
     {
         private RobotBrain brain;
 
-        private void Awake() { brain = GetComponent<RobotBrain>(); }
+        private void Awake()
+        {
+            brain = GetComponent<RobotBrain>();
+        }
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag("Laser") || other.name.Contains("Laser"))
-            {
-                brain.HandleLaserHit();
-            }
+            bool isLaser = other.CompareTag("Laser");
+
+            Debug.Log(
+                $"[ROBOT LASER DEBUG] Object={other.name}, " +
+                $"Tag={other.tag}, IsLaser={isLaser}"
+            );
+
+            if (!isLaser)
+                return;
+
+            Debug.LogError(
+                $"[ROBOT LASER HIT] {other.name}",
+                other.gameObject
+            );
+
+            brain.HandleLaserHit();
         }
     }
 }

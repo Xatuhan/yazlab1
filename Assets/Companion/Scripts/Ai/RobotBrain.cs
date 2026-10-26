@@ -51,6 +51,10 @@ public class RobotBrain : MonoBehaviour, IPetBrain
     // Shared laser response; suppresses duplicate callbacks from overlapping beams.
     public void HandleLaserHit()
     {
+        Debug.LogError(
+            "[HANDLE LASER HIT] Çağrı alındı.",
+            this
+        );
         if (Time.time < nextLaserResetTime) return;
         nextLaserResetTime = Time.time + 1f;
         ResetToStartPosition();
