@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace YazLab.NpcDialogue
@@ -20,6 +21,7 @@ namespace YazLab.NpcDialogue
         private OllamaClient _client;
         private OllamaSettings _settings; // hata mesajlarında model adı ve süre için
         private GuardConversation _conversation;
+        private ItemCatalog _items; // null: eşya yok (dosya yok ya da geçersiz)
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private string _loadError; // null değilse NPC pasif, oyuncuya sistem mesajı gösterilir
 
@@ -32,6 +34,7 @@ namespace YazLab.NpcDialogue
         private void Start()
         {
             view.Submitted += OnSubmitted;
+            view.ItemClicked += ShowItem;
             try
             {
                 string dir = Path.Combine(Application.streamingAssetsPath, Folder);
@@ -48,10 +51,27 @@ namespace YazLab.NpcDialogue
                     new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars,
                     settings.patienceTurns, patience);
                 view.SetMaxInput(settings.maxInputChars);
+                LoadItems(Path.Combine(dir, "items.json"));
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
             {
                 _loadError = SystemMessages.FilesUnreadable;
+            }
+        }
+
+        // Eşyalar isteğe bağlı: dosya yoksa ya da geçersizse eşya şeridi boş kalır, konuşma yine çalışır.
+        private void LoadItems(string path)
+        {
+            if (!File.Exists(path))
+                return;
+            if (ItemCatalog.TryParse(File.ReadAllText(path), out ItemCatalog catalog, out string error))
+            {
+                _items = catalog;
+                view.SetItems(catalog.Items);
+            }
+            else
+            {
+                Debug.LogWarning(error);
             }
         }
 
@@ -108,8 +128,17 @@ namespace YazLab.NpcDialogue
             Cursor.visible = _cursorVisible;
         }
 
-        // async void yalnızca bu olay işleyicisinde; tüm gövde try/catch: hiçbir hata oyunu çökertmez.
-        private async void OnSubmitted(string text)
+        private void OnSubmitted(string text) => RunTurn(() => _conversation.SendAsync(text, _cts.Token), null);
+
+        // Eşya göstermek. Dışarıdan da çağrılabilir (ör. A'nın envanteri): guard.ShowItem("ring").
+        public void ShowItem(string itemId)
+        {
+            if (_items != null && _items.TryGet(itemId, out ItemData item))
+                RunTurn(() => _conversation.ShowItemAsync(item, _cts.Token), itemId);
+        }
+
+        // async void yalnızca burada; tüm gövde try/catch: hiçbir hata oyunu çökertmez.
+        private async void RunTurn(Func<Task<TurnOutcome>> turn, string itemId)
         {
             if (_conversation == null || _conversation.IsBusy || _finished)
                 return;
@@ -117,8 +146,8 @@ namespace YazLab.NpcDialogue
             view.SetBusy(true);
             try
             {
-                TurnOutcome outcome = await _conversation.SendAsync(text, _cts.Token);
-                Show(outcome);
+                TurnOutcome outcome = await turn();
+                Show(outcome, itemId);
             }
             catch (OperationCanceledException)
             {
@@ -137,11 +166,13 @@ namespace YazLab.NpcDialogue
             }
         }
 
-        private void Show(TurnOutcome outcome)
+        private void Show(TurnOutcome outcome, string itemId)
         {
             switch (outcome.Status)
             {
                 case TurnStatus.Answered:
+                    if (itemId != null)
+                        view.MarkItemShown(itemId);
                     view.AddNpcLine(outcome.Decision.Reply);
                     // allow → kapı + kazandın, attack → kaybettin, deny → konuşma sürer.
                     if (NpcEvents.Publish(outcome.Decision, _conversation.AnsweredTurns))
@@ -151,7 +182,8 @@ namespace YazLab.NpcDialogue
                     }
                     break;
                 case TurnStatus.Rejected:
-                    view.ShowSystem(SystemMessages.InputRejected);
+                    if (itemId == null) // eşya zaten gösterilmişse sessizce yok sayılır
+                        view.ShowSystem(SystemMessages.InputRejected);
                     break;
                 case TurnStatus.Failed:
                     view.ShowSystem(SystemMessages.For(outcome.Error, _settings.model, _settings.timeoutSeconds));
@@ -165,7 +197,10 @@ namespace YazLab.NpcDialogue
             _cts.Dispose();
             _client?.Dispose();
             if (view != null)
+            {
                 view.Submitted -= OnSubmitted;
+                view.ItemClicked -= ShowItem;
+            }
         }
     }
 }

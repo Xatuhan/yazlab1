@@ -18,8 +18,13 @@ namespace YazLab.NpcDialogue
         [SerializeField] private ScrollRect logScroll;  // geçmişi saran kaydırma alanı
         [SerializeField] private TMP_Text systemText;   // sistem mesajı: geçmişe girmez, ayrı satır
         [SerializeField] private TMP_Text thinkingText; // "Düşünüyor..."
+        // Eşya şeridi (isteğe bağlı): her eşya için şablon düğmenin bir kopyası oluşturulur.
+        [SerializeField] private Transform itemBar;
+        [SerializeField] private Button itemButtonTemplate;
 
         private const float DotInterval = 0.4f;
+        private readonly Dictionary<string, Button> _itemButtons = new Dictionary<string, Button>();
+        private readonly HashSet<string> _shownItems = new HashSet<string>();
         // Ekrandaki geçmiş konuşmanın tamamını gösterir; sınır yalnızca belleğin sonsuz büyümemesi için.
         // (Modelin hafızası ayrı: ConversationHistory, son 6 tur.)
         private const int MaxLogLines = 100;
@@ -29,6 +34,7 @@ namespace YazLab.NpcDialogue
         private int _dots = -1;
 
         public event Action<string> Submitted;
+        public event Action<string> ItemClicked; // eşya kimliği
 
         private void Awake()
         {
@@ -42,7 +48,51 @@ namespace YazLab.NpcDialogue
             sendButton.onClick.AddListener(Submit);
             input.onSubmit.AddListener(_ => Submit()); // Enter
             thinkingText.gameObject.SetActive(false);
+            if (itemButtonTemplate != null)
+                itemButtonTemplate.gameObject.SetActive(false);
             panel.SetActive(false);
+        }
+
+        // Eşya düğmelerini oluşturur. Şerit ya da şablon bağlı değilse eşyasız çalışılır.
+        public void SetItems(IReadOnlyList<ItemData> items)
+        {
+            if (itemBar == null || itemButtonTemplate == null || items == null)
+                return;
+            foreach (ItemData item in items)
+            {
+                Button button = Instantiate(itemButtonTemplate, itemBar);
+                button.gameObject.SetActive(true);
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>();
+                if (label != null)
+                    label.text = item.label;
+                string id = item.id, name = item.label;
+                button.onClick.AddListener(() => OnItemButton(id, name));
+                _itemButtons[id] = button;
+            }
+        }
+
+        // Eşya gösterildi: düğmesi bir daha açılmaz.
+        public void MarkItemShown(string id)
+        {
+            _shownItems.Add(id);
+            RefreshInteractable();
+        }
+
+        private void OnItemButton(string id, string label)
+        {
+            if (_busy || _locked || _shownItems.Contains(id))
+                return;
+            AddLine("(Gösterdin: " + label + ")");
+            ItemClicked?.Invoke(id);
+        }
+
+        private void RefreshInteractable()
+        {
+            bool open = !_busy && !_locked;
+            input.interactable = open;
+            sendButton.interactable = open;
+            foreach (KeyValuePair<string, Button> pair in _itemButtons)
+                pair.Value.interactable = open && !_shownItems.Contains(pair.Key);
         }
 
         private void OnDestroy()
@@ -85,8 +135,7 @@ namespace YazLab.NpcDialogue
         public void SetBusy(bool busy)
         {
             _busy = busy;
-            input.interactable = !busy && !_locked;
-            sendButton.interactable = !busy && !_locked;
+            RefreshInteractable();
             thinkingText.gameObject.SetActive(busy);
             _dots = -1;
             if (!busy && !_locked && panel.activeSelf)
@@ -97,8 +146,7 @@ namespace YazLab.NpcDialogue
         public void Lock()
         {
             _locked = true;
-            input.interactable = false;
-            sendButton.interactable = false;
+            RefreshInteractable();
         }
 
         private void Update()
