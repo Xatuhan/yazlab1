@@ -42,9 +42,11 @@ namespace YazLab.NpcDialogue
 
                 string prompt = File.ReadAllText(Path.Combine(dir, "guard_prompt.txt"));
                 string reminder = File.ReadAllText(Path.Combine(dir, "guard_reminder.txt"));
+                string patience = File.ReadAllText(Path.Combine(dir, "guard_patience.txt"));
                 _client = new OllamaClient(settings);
                 _conversation = new GuardConversation(_client, new NpcResponseParser(settings.maxReplyChars),
-                    new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars);
+                    new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars,
+                    settings.patienceTurns, patience);
                 view.SetMaxInput(settings.maxInputChars);
             }
             catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)

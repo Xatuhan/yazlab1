@@ -9,7 +9,7 @@ namespace YazLab.NpcDialogue.Tests
         private const string ValidJson =
             "{\"baseUrl\":\"http://127.0.0.1:11434\",\"model\":\"gemma4:e2b\",\"timeoutSeconds\":60," +
             "\"numCtx\":4096,\"numPredict\":200,\"temperature\":0.5,\"keepAlive\":\"30m\"," +
-            "\"maxInputChars\":200,\"maxReplyChars\":400,\"historyTurns\":6}";
+            "\"maxInputChars\":200,\"maxReplyChars\":400,\"historyTurns\":6,\"patienceTurns\":8}";
 
         private static string StreamingFile(string name) =>
             Path.Combine(Application.streamingAssetsPath, "NpcDialogue", name);
@@ -27,10 +27,12 @@ namespace YazLab.NpcDialogue.Tests
             Assert.AreEqual(200, s.numPredict);
             Assert.AreEqual(0.5f, s.temperature);
             Assert.AreEqual(6, s.historyTurns);
+            Assert.AreEqual(8, s.patienceTurns);
         }
 
         [TestCase("guard_prompt.txt")]
         [TestCase("guard_reminder.txt")]
+        [TestCase("guard_patience.txt")]
         public void PromptFile_ExistsAndNotEmpty(string name)
         {
             string prompt = File.ReadAllText(StreamingFile(name));
@@ -70,6 +72,7 @@ namespace YazLab.NpcDialogue.Tests
         [TestCase("\"temperature\":0.5", "\"temperature\":0")]
         [TestCase("\"temperature\":0.5", "\"temperature\":3")]
         [TestCase(",\"temperature\":0.5", "")]
+        [TestCase("\"patienceTurns\":8", "\"patienceTurns\":0")]
         public void TryParse_InvalidNumbers_Fail(string from, string to)
         {
             Assert.IsFalse(OllamaSettings.TryParse(ValidJson.Replace(from, to), out _, out _));

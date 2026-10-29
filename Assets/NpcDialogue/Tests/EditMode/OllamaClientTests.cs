@@ -20,7 +20,7 @@ namespace YazLab.NpcDialogue.Tests
             string json =
                 "{\"baseUrl\":\"" + baseUrl + "\",\"model\":\"" + model + "\",\"timeoutSeconds\":" + timeoutSeconds +
                 ",\"numCtx\":4096,\"numPredict\":200,\"temperature\":0.5,\"keepAlive\":\"30m\"," +
-                "\"maxInputChars\":200,\"maxReplyChars\":400,\"historyTurns\":6}";
+                "\"maxInputChars\":200,\"maxReplyChars\":400,\"historyTurns\":6,\"patienceTurns\":8}";
             Assert.IsTrue(OllamaSettings.TryParse(json, out OllamaSettings s, out string error), error);
             return s;
         }

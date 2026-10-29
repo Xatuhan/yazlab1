@@ -17,6 +17,7 @@ namespace YazLab.NpcDialogue
         public int maxInputChars;
         public int maxReplyChars;
         public int historyTurns;
+        public int patienceTurns; // bu kadar turda ikna olmazsa saldırır: konuşma sonsuza kadar sürmez
 
         // Dosya düzenlenebilir olduğu için her alan doğrulanır. error, oyuncuya gösterilecek Türkçe metindir.
         public static bool TryParse(string json, out OllamaSettings settings, out string error)
@@ -49,7 +50,7 @@ namespace YazLab.NpcDialogue
                 return false;
             }
             if (s.timeoutSeconds <= 0 || s.numCtx <= 0 || s.numPredict <= 0 || s.maxInputChars <= 0
-                || s.maxReplyChars <= 0 || s.historyTurns <= 0)
+                || s.maxReplyChars <= 0 || s.historyTurns <= 0 || s.patienceTurns <= 0)
             {
                 error = "Ayar dosyasındaki sayılar sıfırdan büyük olmalı.";
                 return false;

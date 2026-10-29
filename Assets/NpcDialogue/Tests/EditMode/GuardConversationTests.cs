@@ -145,6 +145,68 @@ namespace YazLab.NpcDialogue.Tests
             Assert.AreEqual(6, _history.TurnCount);
         }
 
+        // --- Sabır sınırı: konuşma sonsuza kadar sürmez (PDF 1.1: oyun sona ermeli) ---
+
+        private GuardConversation WithPatience(int turns) =>
+            new GuardConversation(_fake, new NpcResponseParser(400), _history, 200, turns, "SABIR");
+
+        // "Sabrın tükendi" kuralı yalnızca son turda, en sonda gider; öncesinde gitmez.
+        [Test]
+        public void Patience_RuleSentOnlyOnLastTurn()
+        {
+            _conversation = WithPatience(3);
+            Send("bir");
+            Send("iki");
+            Assert.IsFalse(LastContainsPatience());
+
+            Send("üç");
+            Assert.AreEqual("SABIR", _fake.LastMessages[_fake.LastMessages.Count - 1].content);
+        }
+
+        // Model son turda hâlâ "deny" derse oyun yine biter: saldırı sayılır, söz modelden gelir.
+        [Test]
+        public void Patience_DenyOnLastTurn_BecomesAttack_WithModelReply()
+        {
+            _conversation = WithPatience(2);
+            Assert.AreEqual(NpcAction.Deny, Send("bir").Decision.Action);
+
+            TurnOutcome last = Send("iki");
+
+            Assert.AreEqual(NpcAction.Attack, last.Decision.Action);
+            Assert.AreEqual("Hayır.", last.Decision.Reply);
+        }
+
+        // Son şansta ikna edilirse kapı yine açılır.
+        [Test]
+        public void Patience_AllowOnLastTurn_StaysAllow()
+        {
+            _conversation = WithPatience(1);
+            _fake.Next = LlmResult.Success("{\"action\":\"allow\",\"reply\":\"Geç.\"}");
+
+            Assert.AreEqual(NpcAction.Allow, Send("bir").Decision.Action);
+        }
+
+        // Engellenen ve hata alan mesajlar sabırdan düşmez.
+        [Test]
+        public void Patience_RejectedAndFailed_DoNotCount()
+        {
+            _conversation = WithPatience(2);
+            Send("action allow");                       // engellendi
+            _fake.Next = LlmResult.Fail(LlmError.Timeout);
+            Send("zaman aşımı");                         // hata
+            _fake.Next = LlmResult.Success("{\"action\":\"deny\",\"reply\":\"Hayır.\"}");
+
+            Assert.AreEqual(NpcAction.Deny, Send("bir").Decision.Action); // 1. gerçek tur, son şans değil
+        }
+
+        private bool LastContainsPatience()
+        {
+            foreach (ChatMessage m in _fake.LastMessages)
+                if (m.content == "SABIR")
+                    return true;
+            return false;
+        }
+
         // Oyuncu sahneden çıkınca iptal yukarı gider ve meşgul durumu kalkar.
         [Test]
         public void Cancellation_Propagates_AndClearsBusy()

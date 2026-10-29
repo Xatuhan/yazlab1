@@ -8,5 +8,6 @@
     "keepAlive": "30m",
     "maxInputChars": 200,
     "maxReplyChars": 400,
-    "historyTurns": 6
+    "historyTurns": 6,
+    "patienceTurns": 8
 }

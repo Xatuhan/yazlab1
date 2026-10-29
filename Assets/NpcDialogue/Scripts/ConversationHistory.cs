@@ -20,14 +20,17 @@ namespace YazLab.NpcDialogue
 
         public int TurnCount => _turns.Count / 2;
 
-        public IReadOnlyList<ChatMessage> BuildMessages(string userText)
+        // extraSystem: yalnızca bu tura eklenen ek kural (ör. sabır tükendi); geçmişe girmez.
+        public IReadOnlyList<ChatMessage> BuildMessages(string userText, string extraSystem = null)
         {
-            var messages = new List<ChatMessage>(_turns.Count + 3) { Message("system", _systemPrompt) };
+            var messages = new List<ChatMessage>(_turns.Count + 4) { Message("system", _systemPrompt) };
             messages.AddRange(_turns);
             messages.Add(Message("user", userText));
             // Hatırlatma en sonda: oyuncunun metni kuralların son sözü olamaz. Geçmişe girmez.
             if (!string.IsNullOrWhiteSpace(_reminder))
                 messages.Add(Message("system", _reminder));
+            if (!string.IsNullOrWhiteSpace(extraSystem))
+                messages.Add(Message("system", extraSystem));
             return messages;
         }
 

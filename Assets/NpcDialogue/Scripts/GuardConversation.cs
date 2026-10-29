@@ -12,13 +12,18 @@ namespace YazLab.NpcDialogue
         private readonly IResponseParser _parser;
         private readonly ConversationHistory _history;
         private readonly int _maxInputChars;
+        private readonly int _patienceTurns;  // bu kadar turda ikna olmazsa saldırır (oyun sonsuza kadar sürmez)
+        private readonly string _patienceText; // son turda modele giden "sabrın tükendi" kuralı
 
-        public GuardConversation(ILlmClient client, IResponseParser parser, ConversationHistory history, int maxInputChars)
+        public GuardConversation(ILlmClient client, IResponseParser parser, ConversationHistory history, int maxInputChars,
+                                 int patienceTurns = int.MaxValue, string patienceText = null)
         {
             _client = client;
             _parser = parser;
             _history = history;
             _maxInputChars = maxInputChars;
+            _patienceTurns = patienceTurns;
+            _patienceText = patienceText;
         }
 
         // Aynı anda tek istek: model meşgulken ikinci mesaj gönderilmez.
@@ -36,14 +41,22 @@ namespace YazLab.NpcDialogue
             if (text.Length == 0 || text.Length > _maxInputChars || InputFilter.IsBlocked(text))
                 return TurnOutcome.Rejected();
 
+            // Son şans: model sabrının tükendiğini bilir ve kendi sözüyle saldırabilir.
+            bool lastChance = AnsweredTurns + 1 >= _patienceTurns;
+
             IsBusy = true;
             try
             {
-                LlmResult result = await _client.SendAsync(_history.BuildMessages(text), ct);
+                LlmResult result = await _client.SendAsync(
+                    _history.BuildMessages(text, lastChance ? _patienceText : null), ct);
                 if (!result.Ok)
                     return TurnOutcome.Failed(result.Error);
                 if (!_parser.TryParse(result.Content, out NpcDecision decision))
                     return TurnOutcome.Failed(LlmError.BadResponse); // bozuk tur geçmişe girmez
+
+                // Güvence: son turda hâlâ "deny" ise oyun yine biter (PDF 1.1: oyun sona ermeli).
+                if (lastChance && decision.Action == NpcAction.Deny)
+                    decision = new NpcDecision(NpcAction.Attack, decision.Reply);
 
                 _history.AddTurn(text, decision);
                 AnsweredTurns++;

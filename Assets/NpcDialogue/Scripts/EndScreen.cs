@@ -19,10 +19,10 @@ namespace YazLab.NpcDialogue
         [SerializeField] private float showDelaySeconds = 2f;
 
         // Metinler Inspector'dan değişir (hikâye değişirse kod değişmez). {n} = mesaj sayısı.
-        [SerializeField] private string unlockedTitle = "Bekçiyi ikna ettin. Kapı açıldı.";
-        [SerializeField] private string unlockedCount = "{n} mesajda ikna ettin.";
-        [SerializeField] private string defeatedTitle = "Bekçi saldırıya geçti. Savaşı kaybettin.";
-        [SerializeField] private string defeatedCount = "{n} mesajda bekçiyi kızdırdın.";
+        [SerializeField] private string unlockedTitle = "Seni tanıdı. Kapı açıldı.";
+        [SerializeField] private string unlockedCount = "{n} mesajda onu ikna ettin.";
+        [SerializeField] private string defeatedTitle = "Karın saldırıya geçti. Savaşı kaybettin.";
+        [SerializeField] private string defeatedCount = "{n} mesajda karını kızdırdın.";
 
         private void Awake()
         {
