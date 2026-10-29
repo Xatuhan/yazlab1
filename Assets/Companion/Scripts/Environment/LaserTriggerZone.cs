@@ -5,61 +5,83 @@ using UnityEngine.InputSystem;
 public class LaserTriggerZone : MonoBehaviour
 {
     [Header("Bağlı Şalter/Terminal")]
-    [Tooltip("Bu lazer alanının kapatması gereken özel şalteri buraya sürükleyin.")]
     [SerializeField] private DoorTerminal targetTerminal;
 
-    private bool isPlayerInRange = false;
+    [Header("Etkileşim Mesafesi")]
+    [SerializeField] private float interactionDistance = 5f;
+    [SerializeField] private Transform player;
+
+    [Header("Lazer Durumu")]
+    [SerializeField] private bool lasersActive = true;
+
     private bool hasCommandedRobot = false;
 
-    private void OnTriggerEnter(Collider other)
+    // Diğer script lazerleri açıp kapatırken bunu çağıracak.
+    public void SetLasersActive(bool active)
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerInRange = true;
+        lasersActive = active;
 
-            if (!hasCommandedRobot)
-                Debug.Log("<color=white>[Lazer Geçidi]: Şalteri bulması için robota emret -> [E]</color>");
-        }
+        // Lazerler yeniden açılırsa etkileşim tekrar kullanılabilsin.
+        if (lasersActive)
+            hasCommandedRobot = false;
     }
 
-    private void OnTriggerExit(Collider other)
+    private void Start()
     {
-        if (other.CompareTag("Player"))
-            isPlayerInRange = false;
+        if (player == null)
+        {
+            GameObject playerObject =
+                GameObject.FindGameObjectWithTag("Player");
+
+            if (playerObject != null)
+                player = playerObject.transform;
+        }
     }
 
     private void Update()
     {
+        if (!lasersActive || hasCommandedRobot || player == null)
+            return;
+
+        float distance = Vector3.Distance(
+            player.position,
+            transform.position
+        );
+
         bool isEPressed =
             Keyboard.current != null &&
             Keyboard.current.eKey.wasPressedThisFrame;
 
-        if (isPlayerInRange && isEPressed && !hasCommandedRobot)
+        if (distance <= interactionDistance && isEPressed)
             TriggerRobotToInvestigate();
     }
 
     private void TriggerRobotToInvestigate()
     {
-        if (targetTerminal == null)
-        {
-            Debug.LogWarning("[Lazer Geçidi]: Target Terminal atanmamış!");
+        if (!lasersActive || targetTerminal == null)
             return;
-        }
 
         RobotBrain robot = FindAnyObjectByType<RobotBrain>();
 
-        if (robot != null)
+        if (robot == null)
         {
-            hasCommandedRobot = true;
-
-            Debug.Log("<color=cyan>[Oyuncu]: Robota lazere bağlı özel şalteri açma emri verildi!</color>");
-            robot.StateMachine.ChangeState(
-                new AI.States.PetInvestigateState(robot, targetTerminal)
+            Debug.LogWarning(
+                "[Lazer Geçidi] Sahnede RobotBrain bulunamadı!",
+                this
             );
+            return;
         }
-        else
-        {
-            Debug.LogWarning("[Lazer Geçidi]: Sahnede RobotBrain bulunamadı!");
-        }
+
+        hasCommandedRobot = true;
+
+        robot.StateMachine.ChangeState(
+            new AI.States.PetInvestigateState(robot, targetTerminal)
+        );
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, interactionDistance);
     }
 }

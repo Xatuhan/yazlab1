@@ -7,6 +7,9 @@ public class PlayerLaserHandler : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!other.gameObject.activeInHierarchy)
+            return;
+
         if (other.name.Contains("Laser") || other.CompareTag("Laser"))
         {
             Debug.Log("<color=red>Oyuncu Lazere Temas Etti! Baþlangýca Dönülüyor...</color>");

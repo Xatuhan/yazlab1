@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -7,25 +8,68 @@ namespace AI.Core
     {
         [SerializeField] private KnowledgeMap knowledgeMap;
 
-        /// <summary>
-        /// Rota üzerindeki tüm köþeler bilinen (Seen/Visited) alanda mý kontrol eder.
-        /// </summary>
+        private void Awake()
+        {
+            if (knowledgeMap == null)
+                knowledgeMap = GetComponent<KnowledgeMap>();
+        }
 
         public bool IsPathFullyExplored(Vector3 start, Vector3 target)
         {
+            if (knowledgeMap == null ||
+                knowledgeMap.AllNodes == null ||
+                knowledgeMap.AllNodes.Count == 0)
+            {
+                Debug.LogWarning(
+                    "[PathValidator] KnowledgeMap veya düðümler bulunamadý."
+                );
+                return false;
+            }
+
             NavMeshPath path = new NavMeshPath();
 
-            if (!NavMesh.CalculatePath(start, target, NavMesh.AllAreas, path))
+            if (!NavMesh.CalculatePath(
+                    start,
+                    target,
+                    NavMesh.AllAreas,
+                    path))
+            {
+                Debug.LogWarning(
+                    $"[PathValidator] Rota hesaplanamadý: {target}"
+                );
                 return false;
+            }
 
-            return path.status == NavMeshPathStatus.PathComplete;
+            if (path.status != NavMeshPathStatus.PathComplete)
+            {
+                Debug.LogWarning(
+                    $"[PathValidator] Rota tamamlanmadý: {target} | " +
+                    $"Durum: {path.status}"
+                );
+                return false;
+            }
+
+            // Hedef düðüm bilinmiyorsa hedefi geçerli sayma.
+            if (!IsKnown(target))
+            {
+                Debug.LogWarning(
+                    $"[PathValidator] Hedef bilinen bir düðüm deðil: {target}"
+                );
+                return false;
+            }
+
+            // Ara noktalarý kontrol etmiyoruz.
+            // Böylece havalandýrmaya giden geçerli NavMesh rotasý
+            // ara nokta eþleþtirmesi yüzünden reddedilmez.
+            return true;
         }
-
 
         private bool IsKnown(Vector3 point)
         {
             ExplorationNode nearest = GetNearestNode(point);
-            return nearest != null && nearest.State != NodeState.Unknown;
+
+            return nearest != null &&
+                   nearest.State != NodeState.Unknown;
         }
 
         private ExplorationNode GetNearestNode(Vector3 point)
@@ -42,7 +86,8 @@ namespace AI.Core
 
             foreach (var node in knowledgeMap.AllNodes)
             {
-                float distanceSqr = (point - node.Position).sqrMagnitude;
+                float distanceSqr =
+                    (point - node.Position).sqrMagnitude;
 
                 if (distanceSqr < minDistSqr)
                 {
@@ -51,10 +96,13 @@ namespace AI.Core
                 }
             }
 
-            // Düðüm aralýðýna göre daha sýký eþleþtirme.
-            float tolerance = Mathf.Max(0.5f, knowledgeMap.NodeSpacing * 0.75f);
+            float tolerance = Mathf.Max(
+                0.5f,
+                knowledgeMap.NodeSpacing * 0.75f
+            );
 
-            return closest != null && minDistSqr <= tolerance * tolerance
+            return closest != null &&
+                   minDistSqr <= tolerance * tolerance
                 ? closest
                 : null;
         }

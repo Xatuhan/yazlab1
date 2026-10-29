@@ -67,7 +67,9 @@ namespace AI.Core
             {
                 for (float z = bounds.min.z - 1f; z <= bounds.max.z + 1f; z += step)
                 {
-                    for (float y = bounds.min.y - 1f; y <= bounds.max.y + 1f; y += step)
+                    float yStep = Mathf.Min(step, 0.5f);
+
+                    for (float y = bounds.min.y - 1f; y <= bounds.max.y + 1f; y += yStep)
                     {
                         Vector3 testPos = new Vector3(x, y, z);
 

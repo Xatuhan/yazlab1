@@ -12,6 +12,9 @@ namespace AI.Core
         [SerializeField] private float viewDistance = 18.0f;
         [SerializeField] private float fieldOfViewAngle = 180.0f;
 
+        [Tooltip("Labirent düğümlerinin keşfedilme mesafesi")]
+        [SerializeField] private float mazeDiscoveryDistance = 2.0f;
+
         [Header("Katman (Layer) Filtreleri")]
         [Tooltip("Sadece duvarlar ve görüşü kapatan statik engeller")]
         [SerializeField] private LayerMask visionObstacleMask;
@@ -25,6 +28,7 @@ namespace AI.Core
         public DoorTerminal DetectedTerminal { get; private set; }
 
         private Collider[] selfColliders;
+
         private readonly HashSet<Collider> loggedLaserBlockers =
             new HashSet<Collider>();
 
@@ -73,7 +77,8 @@ namespace AI.Core
                 knowledgeMap.AllNodes.Count == 0)
                 return;
 
-            ExplorationNode startNode = GetNearestNode(transform.position);
+            ExplorationNode startNode =
+                GetNearestNode(transform.position);
 
             if (startNode != null)
                 startNode.State = NodeState.Visited;
@@ -113,27 +118,41 @@ namespace AI.Core
 
         public void UpdateNodeVisibility(bool fullCircle = false)
         {
+            if (knowledgeMap == null ||
+                knowledgeMap.AllNodes == null)
+                return;
+
             Vector3 eyePos = eyeTransform != null
                 ? eyeTransform.position
                 : transform.position + Vector3.up * 0.2f;
 
             foreach (var node in knowledgeMap.AllNodes)
             {
+                // Daha önce ziyaret edilmiş düğümlerin durumunu koru.
                 if (node.State == NodeState.Visited ||
                     node.State == NodeState.Checked)
                     continue;
 
-                Vector3 dirToNode =
-                    (node.Position + Vector3.up * 0.2f) - eyePos;
+                Vector3 nodePos =
+                    node.Position + Vector3.up * 0.2f;
 
+                Vector3 dirToNode = nodePos - eyePos;
                 float dist = dirToNode.magnitude;
 
-                if (dist > viewDistance)
+                // Labirent düğümleri yalnızca yakından keşfedilir.
+                if (dist > mazeDiscoveryDistance)
                     continue;
 
-                float angle = Vector3.Angle(transform.forward, dirToNode);
+                if (dist <= 0.001f)
+                    continue;
 
-                if (!fullCircle && angle > fieldOfViewAngle * 0.5f)
+                float angle = Vector3.Angle(
+                    transform.forward,
+                    dirToNode
+                );
+
+                if (!fullCircle &&
+                    angle > fieldOfViewAngle * 0.5f)
                     continue;
 
                 bool isBlockedByWall = Physics.Raycast(
@@ -158,22 +177,32 @@ namespace AI.Core
                 {
                     Debug.Log(
                         $"[Perception Log] Lazer engeli: " +
-                        $"{laserHit.collider.name} | Layer: " +
-                        $"{LayerMask.LayerToName(laserHit.collider.gameObject.layer)}"
+laserHit.collider.name +
+" | Layer: " +
+LayerMask.LayerToName(
+    laserHit.collider.gameObject.layer
+)
                     );
                 }
 
-                if (!isBlockedByWall && !isBlockedByLaser)
+                // Düğüm yalnızca yakın, görüş alanında ve engelsizse keşfedilir.
+                if (!isBlockedByWall &&
+                    !isBlockedByLaser &&
+                    node.State == NodeState.Unknown)
+                {
                     node.State = NodeState.Seen;
+                }
             }
         }
 
-        public DoorTerminal FindVisibleTerminalForDoor(Door requiredDoor)
+        public DoorTerminal FindVisibleTerminalForDoor(
+            Door requiredDoor)
         {
             return ScanForTerminals(requiredDoor);
         }
 
-        private DoorTerminal ScanForTerminals(Door requiredDoor = null)
+        private DoorTerminal ScanForTerminals(
+            Door requiredDoor = null)
         {
             Vector3 eyePos = eyeTransform != null
                 ? eyeTransform.position
@@ -204,7 +233,7 @@ namespace AI.Core
                     terminal.transform.position
                 );
 
-                // Yakın terminal: görüş açısı ve raycast gerektirmeden algıla.
+                // Mevcut yakın terminal algılama mantığı korunuyor.
                 if (distToTerminal <= 3.0f)
                 {
                     Debug.Log(
@@ -238,8 +267,11 @@ namespace AI.Core
                     QueryTriggerInteraction.Ignore))
                 {
                     if (rayHit.transform != terminal.transform &&
-                        !rayHit.transform.IsChildOf(terminal.transform))
+                        !rayHit.transform.IsChildOf(
+                            terminal.transform))
+                    {
                         continue;
+                    }
                 }
 
                 Debug.Log(

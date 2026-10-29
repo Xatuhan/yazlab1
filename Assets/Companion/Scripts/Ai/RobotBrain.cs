@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,11 +9,20 @@ public class RobotBrain : MonoBehaviour, IPetBrain
     [SerializeField] private Transform target;
     [SerializeField] private float followDistance = 2.5f;
 
+    [Header("Lazer Öğrenme")]
+    [SerializeField] private float resetCooldown = 1f;
+    [SerializeField] private int observationsToLearn = 3;
+
     public NavMeshAgent Agent { get; private set; }
     public Transform Transform => transform;
     public Transform Target => target;
     public float FollowDistance => followDistance;
     public PetStateMachine StateMachine { get; private set; }
+
+    public int LaserHitCount { get; private set; }
+    public int LaserObservationCount { get; private set; }
+    public bool HasEnoughLaserObservations =>
+        LaserObservationCount >= observationsToLearn;
 
     private Vector3 startPosition;
     private Quaternion startRotation;
@@ -31,7 +41,10 @@ public class RobotBrain : MonoBehaviour, IPetBrain
         StateMachine.Initialize(new IdleState(this));
     }
 
-    private void Update() => StateMachine.Update();
+    private void Update()
+    {
+        StateMachine.Update();
+    }
 
     public void ResetToStartPosition()
     {
@@ -41,31 +54,70 @@ public class RobotBrain : MonoBehaviour, IPetBrain
             Agent.ResetPath();
             Agent.Warp(startPosition);
         }
-        else transform.position = startPosition;
+        else
+        {
+            transform.position = startPosition;
+        }
 
         transform.rotation = startRotation;
+
+        if (Agent != null && Agent.isOnNavMesh)
+            Agent.isStopped = false;
+
         StateMachine.ChangeState(new MoveToTargetState(this));
-        Debug.Log("<color=yellow>[RobotBrain]: Robot lazere çarptı ve başlangıç noktasına sıfırlandı!</color>");
+
+        Debug.Log(
+            "<color=yellow>[RobotBrain] Robot başlangıca sıfırlandı.</color>"
+        );
     }
 
-    // Shared laser response; suppresses duplicate callbacks from overlapping beams.
+    // Gerçek bir lazer çarpışması gerçekleştiğinde çağrılır.
     public void HandleLaserHit()
     {
-        Debug.LogError(
-            "[HANDLE LASER HIT] Çağrı alındı.",
-            this
+        if (Time.time < nextLaserResetTime)
+            return;
+
+        nextLaserResetTime = Time.time + resetCooldown;
+
+        LaserHitCount++;
+        LaserObservationCount++;
+
+        Debug.Log(
+            $"[Laser Learning] Çarpışma: {LaserHitCount} | " +
+            $"Gözlem: {LaserObservationCount}/{observationsToLearn} | " +
+            $"Yeterli gözlem: {HasEnoughLaserObservations}"
         );
-        if (Time.time < nextLaserResetTime) return;
-        nextLaserResetTime = Time.time + 1f;
+
         ResetToStartPosition();
+    }
+
+    // İleride algı sistemi tarafından lazerin durum değişimi
+    // gözlemlendiğinde kullanılacak kayıt noktası.
+    public void RecordLaserObservation(bool laserActive)
+    {
+        LaserObservationCount++;
+
+        Debug.Log(
+            $"[Laser Learning] Lazer gözlemi: " +
+            $"{(laserActive ? "AÇIK" : "KAPALI")} | " +
+            $"Toplam gözlem: {LaserObservationCount}"
+        );
     }
 
     private void OnDrawGizmos()
     {
-        if (Agent == null || !Agent.hasPath) return;
+        if (Agent == null || !Agent.hasPath)
+            return;
+
         Gizmos.color = Color.yellow;
         NavMeshPath path = Agent.path;
+
         for (int i = 0; i < path.corners.Length - 1; i++)
-            Gizmos.DrawLine(path.corners[i] + Vector3.up * 0.2f, path.corners[i + 1] + Vector3.up * 0.2f);
+        {
+            Gizmos.DrawLine(
+                path.corners[i] + Vector3.up * 0.2f,
+                path.corners[i + 1] + Vector3.up * 0.2f
+            );
+        }
     }
 }
