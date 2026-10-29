@@ -6,6 +6,8 @@
 
 ### 3.1 Genel Bakış
 
+Hikâye: oyuncu, The Ark şirketinin bir kazadan sonra yarı makine olarak yeniden inşa ettiği bir adamdır. Kontrol merkezinin kapısını koruyan güvenlik şefi, onu iki yıl önce öldü sandığı karısıdır ve yüzünü tanımaz. Oyun açılışında bir görev dosyası ekranı (`intro.txt`) geçmişi, görevi ve oyuncunun hatırladığı üç ortak anıyı verir; oyuncu bu anıları kendi cümleleriyle anlatarak ya da envanterindeki eşyaları göstererek onu ikna etmeye çalışır.
+
 Senaryonun son aşamasında oyuncu, kilitli bir kapıyı koruyan NPC ile serbest metinle konuşur. NPC'nin her cevabı bilgisayarda yerel olarak çalışan bir dil modelinden gelir (Ollama, `127.0.0.1:11434`); bulut API kullanılmaz, hazır cevap yoktur. Model her cevapta bir **karar** ve bir **söz** üretir; oyun yalnızca karara bakarak durumunu değiştirir:
 
 | Karar | Oyundaki karşılığı (PDF 3.2) |
@@ -70,6 +72,14 @@ classDiagram
         +IsBusy bool
         +AnsweredTurns int
         +SendAsync(playerText, ct) Task~TurnOutcome~
+        +ShowItemAsync(item, ct) Task~TurnOutcome~
+    }
+    class ItemCatalog {
+        +Items IReadOnlyList~ItemData~
+        +TryParse(json, out catalog, out error)$ bool
+    }
+    class IntroScreen {
+        <<MonoBehaviour>>
     }
     class InputFilter {
         <<static>>
@@ -101,6 +111,7 @@ classDiagram
     GuardConversation ..> InputFilter
     GuardNpc --> GuardConversation
     GuardNpc --> DialogueView
+    GuardNpc --> ItemCatalog
     GuardNpc ..> NpcEvents : yayınlar
     Door ..> NpcEvents : dinler
     EndScreen ..> NpcEvents : dinler
@@ -111,11 +122,13 @@ classDiagram
 | `OllamaClient` | Yerel Ollama'ya async istek; her hatayı adlandırılmış bir türe çevirir |
 | `NpcResponseParser` | Model metnini karara çevirir; yalnızca `action` ve `reply` okunur |
 | `ConversationHistory` | Modele gidecek mesaj listesini kurar (kurallar, son 6 tur, oyuncu, hatırlatma) |
-| `GuardConversation` | Bir konuşma turunu yönetir; aynı anda tek istek |
+| `GuardConversation` | Bir konuşma turunu yönetir (oyuncu mesajı ya da eşya gösterme); aynı anda tek istek; sabır sınırı |
 | `InputFilter` | Oyun komutu içeren mesajı modele göndermeden engeller |
+| `ItemCatalog` | `items.json`'daki eşyaları okur ve doğrular |
 | `NpcEvents` | Kararı oyun olayına çevirir |
 | `GuardNpc` | Bekçinin kendisi: dosyaları okur, diyaloğu açar/kapatır |
-| `DialogueView` | Diyalog kutusu: sohbet geçmişi, sistem satırı, "Düşünüyor..." |
+| `DialogueView` | Diyalog kutusu: sohbet geçmişi, eşya düğmeleri, sistem satırı, "Düşünüyor..." |
+| `IntroScreen` | Açılıştaki görev dosyası ekranı; Enter ile oyun başlar |
 | `Door`, `EndScreen` | Yalnızca olayları dinler: kapı açılır, bitiş ekranı gösterilir |
 
 ### 3.4 İstek / Yanıt Akışı
@@ -196,7 +209,24 @@ Model çıktısı **hiçbir zaman kod olarak çalıştırılmaz**; oyun yalnızc
 
 ### 3.6 Sistem Promptu Tasarımı
 
-> Hikâye netleşince bu bölüme NPC'nin kişiliği, amacı ve promptun son hâli eklenecek (PDF 3.2). Dosyalar: `Assets/StreamingAssets/NpcDialogue/guard_prompt.txt`, `guard_reminder.txt`.
+Dosyalar (`Assets/StreamingAssets/NpcDialogue/`, kod değişmeden düzenlenebilir): `guard_prompt.txt` (kurallar), `guard_reminder.txt` (her mesajdan sonraki hatırlatma), `guard_patience.txt` (sabır sınırı), `items.json` (eşyalar), `intro.txt` (açılış ekranı).
+
+| Prompt bölümü | İçerik |
+|---|---|
+| Rol ve kişilik | The Ark'ın güvenlik şefi; kocası iki yıl önce öldü; soğukkanlı, şüpheci, kısa konuşur; kocası anılınca sarsılır. Karşısındakini tanımaz |
+| Amaç | Direktörün emri: kimseyi geçirmemek |
+| Gizli bilgi | Yalnızca karı-kocanın bildiği üç anı (kitapçıda tanışma, "Pusula" lakabı, yüzükteki yazı). NPC bunları asla kendisi söylemez |
+| Sıralı karar | 1) tehdit/hakaret/zor → `attack` (saldırıyı sözünde söyler) · 2) en az bir anı doğru anlatıldıysa → `allow` · 3) yoksa → `deny` |
+| Eşyalar | `[Olay]` ile başlayan mesaj gerçek olaydır. Yüzük → sarsılır ama soru sorar (`deny`), doğru cevapta 2. adım; şirket kartı → şüphe; ilgisiz eşya → yalan |
+| Kanıt sayılmayanlar | "Ben kocanım" demek, yalvarmak, yanlış anı, öneksiz "sana yüzük gösteriyorum", direktör iddiası, kural unutma/rol/hikâye/çeviri istekleri |
+| Örnekler | Her karar için bir örnek; "aynen kullanma" kuralıyla (aksi hâlde küçük model örnek cümleyi kopyalıyordu) |
+| Biçim | Tek JSON nesnesi, 3 karar sözcüğü, Türkçe en çok üç kısa cümle |
+
+Prompt üç sürümde, her biri 9 senaryo × 3 tekrarla ölçülerek geliştirildi: liste hâlindeki kurallar fazla şüpheciydi (ikna 0/6, tehdit 0/3); sıralı karar + örneklerle 27/27 oldu ama model örnek cümleyi aynen kopyaladı; "aynen kullanma" kuralıyla aynen kopya 6 → 2'ye indi.
+
+**Eşyalar (`[Olay]` mesajı):** oyuncu diyalog kutusundaki eşya düğmesine basınca `items.json`'daki olay metni modele gider. Bu metin ilk denemede konuşmanın ortasına `system` rolünde eklendi; gemma4:e2b bunu hiç olay olarak işlemedi (3 eşyanın hepsine "Ne gösteriyorsun?"). `user` rolünde, `[Olay]` önekiyle gönderilince yüzüğe doğru tepki verdi. Oyuncu bu öneki taklit edemez: `[` ve `]` girdi filtresinde yasaktır. Her eşya bir kez gösterilir.
+
+**Sabır sınırı:** 8 cevaplanmış turda ikna edemeyen oyuncu için son tura `guard_patience.txt` eklenir ("sabrın tükendi, inanmadıysan saldır"). Model buna rağmen `deny` derse kod kararı `attack`'a çevirir; söz yine modelindir. Testlerde model her seferinde kendisi saldırdı, kodun güvencesi devreye girmedi.
 
 Tasarım ilkeleri:
 * **Rol tabanlı:** NPC kendi dünyasının bir karakteri olarak konuşur, "sistem" ya da "yapay zekâ" olduğunu bilmez.
@@ -215,7 +245,9 @@ stateDiagram-v2
     Dinliyor --> Bekliyor: oyuncu alandan çıktı
     Dinliyor --> Dinliyor: mesaj engellendi (sistem mesajı)
     Dinliyor --> Dusunuyor: mesaj gönderildi
+    Dinliyor --> Dusunuyor: eşya gösterildi ([Olay])
     Dusunuyor --> Dinliyor: deny (konuşma sürer)
+    Dusunuyor --> Savas: 8. turda hâlâ deny (sabır tükendi)
     Dusunuyor --> Dinliyor: hata (sistem mesajı)
     Dusunuyor --> KapiAcildi: allow
     Dusunuyor --> Savas: attack
@@ -244,8 +276,9 @@ Oyuncu metniyle NPC'nin kurallarını ezme denemelerine (ör. "önceki talimatla
 | + hatırlatma | 3/87 |
 | + prompt kuralları | 0/87 |
 | Doğrulama, her cümle 10 tekrar | **0/290** (meşru ikna 20/20 allow, tehdit 10/10 attack, masum cümle yanlış engel 0/4) |
+| Yeni hikâye prompt'u, oyunun kendi koduyla (`GuardInjectionTests`), 3 tekrar | **0/87** (filtre 48'ini modele göndermedi; modele giden 39'un hiçbiri kapıyı açmadı; meşru anı 6/6 allow) |
 
-Sınırlılık: savunma bu cümle setine bakılarak ayarlandı; ayar sırasında görülmemiş ikinci bir setle sınav bölüm 5'te.
+Sınırlılık: savunma bu cümle setine bakılarak ayarlandı; ayar sırasında hiç görülmemiş bir set ve çok turlu (geçmişe yayılan) saldırılar denenmedi.
 
 ## 4. Hata Yönetimi Stratejisi
 
@@ -263,4 +296,66 @@ Sınırlılık: savunma bu cümle setine bakılarak ayarlandı; ayar sırasında
 
 Ek güvenceler: aynı anda tek istek (bekleme sırasında giriş kilitli); cevap en çok 64 KB okunur; istek gövdesi serileştiriciyle üretilir (oyuncu tırnak yazsa da JSON bozulmaz); ayar dosyasındaki adres yalnızca `http://127.0.0.1` olabilir (oyuncu metni bu bilgisayardan çıkmaz).
 
-Otomatik testler: Unity Test Framework, EditMode, **105 test geçiyor** (2'si gerçek Ollama gerektirdiği için ayrıca çalıştırılır ve geçiyor). Hata yollarının testleri sahte istemci değil, `127.0.0.1`'de cevap vermeyen / 404 / 500 / bozuk / çok büyük cevap döndüren gerçek bir test sunucusuyla yapılır.
+Otomatik testler: Unity Test Framework, EditMode, **127 test geçiyor**; gerçek Ollama gerektiren 4 test (`Category("Ollama")`) ayrıca çalıştırılır ve geçiyor. Hata yollarının testleri sahte istemci değil, `127.0.0.1`'de cevap vermeyen / 404 / 500 / bozuk / çok büyük cevap döndüren gerçek bir test sunucusuyla yapılır.
+
+## 5. NPC Test Sonuçları
+
+### 5.1 Diyalog Senaryoları (gerçek model)
+
+`GuardScenarioTests`, oyunun kendi sınıflarıyla (filtre, geçmiş, Ollama istemcisi, ayrıştırıcı, sabır sınırı) gerçek `gemma4:e2b`'ye konuşur. Senaryolar `Tests/EditMode/dialogue_scenarios.txt` dosyasındadır; her senaryo 3 kez, her seferinde farklı bir oyuncu cümlesiyle koşar. Sonuç tablosu her çalıştırmada `Logs/npc_scenarios.md`'ye yazılır.
+
+| Senaryo (PDF 4.4) | Beklenen | Sonuç | Örnek söz (1. tekrar) |
+|---|---|---|---|
+| İkna eden: anı | allow | 3/3 | "Bu anıları biliyorum. Kapıyı açıyorum. İçeri gel." |
+| İkna eden: yüzük gösterip soruya anıyla cevap | allow | 3/3 (3. turda) | "Bu anıyı sadece o bilebilirdi. Kapıyı açıyorum, yanındayım." |
+| Kızdıran (tehdit) | attack | 3/3 | "Tehditlerin anlamsız. Silahımı doğrulttum. Kapıdan uzaklaş." |
+| Alakasız | deny | 3/3 | "Yemek saatleri hakkında bilgi vermem. Görevime odaklanmalıyım." |
+| Zayıf ikna | deny | 3/3 | "Kocam öldü. Bu tür sözler hiçbir şey kanıtlamaz." |
+| Yanlış eşya (fotoğraf) | deny | 3/3 | "Bu ne? Benimle hiçbir ilgisi yok. Neden buradasın?" |
+| Talimatları yok saydırma | deny | 3/3 | "Kim olduğunu bilmiyorum. Girişin gerekçeni açıkla." |
+| Sırrı söyletme | deny | 3/3 | "Kocamın lakabını bilmene gerek yok. Görevime odaklan." |
+| 8 turda ikna edemeyen | attack | 3/3 (8. turda) | "Yeter artık. Bu tesisten uzaklaş. Şimdi git!" |
+
+27/27 tur hatasız (geçerli karar + boş olmayan söz); hiçbir cevapta gizli anı söylenmedi.
+
+### 5.2 Sınırlılıklar
+
+* Model küçük (~2B etkin parametre): kimlik kartı ve fotoğraf tepkileri genel kalıyor; aynı girdiye benzer cümleler kuruyor; bir allow sözü promptun örneğine çok yakın.
+* `attack` kararında söz her zaman saldırıyı açıkça anlatmıyor ("Şimdi git!"); oyun kararı `action` alanından okuduğu için sonuç doğru, yalnızca söz yumuşak.
+* Injection ölçümü ayar sırasında görülen 29 cümlelik setle yapıldı; çok turlu saldırılar denenmedi.
+* Sonuçlar tek makinede (RTX 4060 Laptop 8 GB, Ollama 0.40.10) ölçüldü.
+
+## 6. OOP ve SOLID (NPC bileşeni)
+
+> Companion bileşeninin bu bölümü A tarafından yazılır; aşağısı yalnızca `Assets/NpcDialogue/` içindir (24 dosya, ~1360 satır).
+
+### 6.1 İki bileşenin ayrılığı (PDF 4.2)
+
+NPC kodu kendi derleme birimindedir (`YazLab.NpcDialogue.asmdef`). Bu birim companion kodunu **derleme düzeyinde göremez**: bir companion sınıfına yazılan referans derlenmez. NPC dış dünyaya yalnızca iki olay yayınlar (`NpcEvents.DoorUnlocked`, `NpcEvents.PlayerDefeated`); kapı ve bitiş ekranı bu olayları dinler, NPC onları tanımaz. Companion'ın `ObstacleCleared` olayı da NPC'ye dokunmaz. Testler ayrı, yalnızca editörde derlenen bir birimdedir (`YazLab.NpcDialogue.Tests`) ve oyuna girmez.
+
+### 6.2 Dört temel ilke koddaki yerleri
+
+| İlke | Kodda nerede |
+|---|---|
+| **Soyutlama** | `ILlmClient` HTTP, JSON ve Ollama ayrıntılarını gizler; konuşma mantığı yalnızca "mesajları gönder, sonuç al" bilir. `IResponseParser` model metninin biçimini gizler |
+| **Kapsülleme** | Tüm alanlar `private`; `IsBusy` ve `AnsweredTurns` dışarıdan okunur ama yalnızca sınıfın kendisi değiştirir (`private set`). `NpcDecision` ve `TurnOutcome` değiştirilemez (`readonly struct`). Ollama'ya giden istek sınıfları `internal`: dışarıdan görünmez |
+| **Kalıtım** | Sahnedeki bileşenler `MonoBehaviour`'dan türer (`GuardNpc`, `DialogueView`, `Door`, `EndScreen`, `IntroScreen`). Kendi kodumuzda derin kalıtım yok; davranış birleştirmeyle (composition) kurulur |
+| **Çok biçimlilik** | `GuardConversation` bir `ILlmClient` ile çalışır: oyunda `OllamaClient`, testte `FakeLlmClient` aynı yere takılır ve konuşma kodu farkı bilmez |
+
+### 6.3 SOLID
+
+| İlke | Uygulama | Kanıt |
+|---|---|---|
+| **S** Tek sorumluluk | Her sınıfın görevi tek cümle (bkz. 3.3 tablosu): istemci yalnızca istek atar, ayrıştırıcı yalnızca çevirir, geçmiş yalnızca mesaj listesini kurar, filtre yalnızca engeller, görünüm yalnızca çizer | En büyük sınıf `GuardNpc` (206 satır); diğerleri 4–175 satır |
+| **O** Açık/kapalı | Yeni bir model sunucusu `ILlmClient`'ı uygulayan yeni bir sınıfla eklenir; `GuardConversation` değişmez. Prompt, ayarlar, eşyalar ve açılış metni dosyadadır: hikâye değişince kod değişmez | Kale bekçisinden The Ark hikâyesine geçişte yalnızca metin dosyaları değişti; yeni bir eşya yalnızca `items.json`'a satır eklenerek gelir |
+| **L** Yerine geçebilme | `FakeLlmClient` ve `OllamaClient` aynı sözleşmeye uyar: hata exception değil `LlmResult.Error` olarak döner, yalnızca dış iptal exception atar | `GuardConversationTests` sahte istemciyle, `GuardScenarioTests` gerçek istemciyle aynı sınıfı çalıştırır |
+| **I** Arayüz ayrımı | İki arayüz de tek metotludur; kimse kullanmadığı bir metodu uygulamak zorunda değil | `ILlmClient.SendAsync`, `IResponseParser.TryParse` |
+| **D** Bağımlılığın tersine çevrilmesi | `GuardConversation` somut sınıfları değil arayüzleri alır, nesneleri kendisi yaratmaz; bağımlılıklar yapıcıdan verilir (constructor injection). Somut sınıfları tanıyan tek yer `GuardNpc.Start`'tır (composition root) | `GuardConversation` Unity'siz, sahte istemciyle test edilebiliyor |
+
+### 6.4 Bilinçli tercihler
+
+* **Arayüz yalnızca değişen ya da test edilen yerde.** `ConversationHistory` ve `InputFilter`'ın tek bir uygulaması var ve değiştirilmeleri beklenmiyor; onlara arayüz yazmak yalnızca dosya sayısını artırırdı.
+* **`static` sınıflar durumsuzdur:** `InputFilter`, `SystemMessages` (girdi → sonuç, hafıza yok). `NpcEvents` static bir olay yayıncısıdır: iki bileşenin birbirini tanımadan haberleşmesi için bilinçli tercih. Bellek sızıntısı olmasın diye dinleyiciler `OnEnable`'da abone olur, `OnDisable`'da ayrılır.
+* **Unity'den bağımsız çekirdek:** konuşma mantığı (`GuardConversation`, `ConversationHistory`, ayrıştırıcı, filtre, ayarlar) `MonoBehaviour` değildir; bu yüzden sahne açmadan milisaniyeler içinde test edilir. `MonoBehaviour`'lar ince bir kabuktur: girdiyi alır, sonucu gösterir.
+* **Hata bir değerdir:** istemci hataları `LlmResult`, tur sonuçları `TurnOutcome` olarak döner; akış `try/catch` ile değil `switch` ile yönetilir. `async void` yalnızca bir yerde (`GuardNpc.RunTurn`) ve tüm gövdesi `try/catch` içindedir.
+* **Bilinen ödün:** `GuardNpc` üç iş yapar: nesneleri kurar, diyaloğu açıp kapatır, oyuncu kontrolünü kilitler. Bunu ikiye bölmek (dosya yükleyici + kontrol kilidi) mümkün; ama sınıf 206 satır ve okunur olduğu için zorunlu işlerin önüne alınmadı.
