@@ -33,6 +33,7 @@ namespace YazLab.NpcDialogue.Tests
         [TestCase("guard_prompt.txt")]
         [TestCase("guard_reminder.txt")]
         [TestCase("guard_patience.txt")]
+        [TestCase("intro.txt")]
         public void PromptFile_ExistsAndNotEmpty(string name)
         {
             string prompt = File.ReadAllText(StreamingFile(name));
