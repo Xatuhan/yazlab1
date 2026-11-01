@@ -1,7 +1,6 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace AI.Core
 {
@@ -22,28 +21,60 @@ namespace AI.Core
         [Tooltip("Sadece Lazer nesnelerinin bulunduğu özel katman")]
         [SerializeField] private LayerMask laserMask;
 
+        [Tooltip("Lazer gözlem sensörlerinin bulunduğu Layer")]
+        [SerializeField] private LayerMask laserSensorMask;
+
+        [Header("Lazer Sensör Taraması")]
+        [SerializeField] private float sensorScanInterval = 0.2f;
+        [SerializeField] private float sensorMovementThreshold = 0.1f;
+
         [Header("Referanslar")]
         [SerializeField] private KnowledgeMap knowledgeMap;
 
         public DoorTerminal DetectedTerminal { get; private set; }
 
+        private RobotBrain robotBrain;
         private Collider[] selfColliders;
 
         private readonly HashSet<Collider> loggedLaserBlockers =
             new HashSet<Collider>();
 
+        private readonly HashSet<Collider> detectedSensors =
+            new HashSet<Collider>();
+
+        private readonly Dictionary<Collider, Vector3> sensorPositions =
+            new Dictionary<Collider, Vector3>();
+
         private DoorTerminal lastLoggedTerminal;
+
+        private float nextSensorScanTime;
+
+        private bool MazeControlActive =>
+            robotBrain != null && robotBrain.ExternalControl;
 
         private void Awake()
         {
             if (knowledgeMap == null)
                 knowledgeMap = GetComponent<KnowledgeMap>();
 
+            robotBrain = GetComponent<RobotBrain>();
+
             selfColliders = GetComponentsInChildren<Collider>();
         }
 
         private void Update()
         {
+            // Lazer sensörleri Maze modunda da çalışmaya devam eder.
+            ScanLaserSensors();
+
+            // Maze kontrolü aktifken ORB terminal algılamasın.
+            if (MazeControlActive)
+            {
+                DetectedTerminal = null;
+                lastLoggedTerminal = null;
+                return;
+            }
+
             if (knowledgeMap == null ||
                 knowledgeMap.AllNodes == null ||
                 knowledgeMap.AllNodes.Count == 0)
@@ -70,8 +101,106 @@ namespace AI.Core
             DetectedTerminal = detected;
         }
 
+        private void ScanLaserSensors()
+        {
+            if (Time.time < nextSensorScanTime)
+                return;
+
+            nextSensorScanTime =
+                Time.time + sensorScanInterval;
+
+            Vector3 eyePos = eyeTransform != null
+                ? eyeTransform.position
+                : transform.position + Vector3.up * 0.2f;
+
+            Collider[] sensors = Physics.OverlapSphere(
+                transform.position,
+                viewDistance,
+                laserSensorMask,
+                QueryTriggerInteraction.Collide
+            );
+
+            foreach (Collider sensor in sensors)
+            {
+                if (sensor == null || IsSelfCollider(sensor))
+                    continue;
+
+                Vector3 target = sensor.bounds.center;
+                Vector3 direction = target - eyePos;
+                float distance = direction.magnitude;
+
+                if (distance <= 0.001f)
+                    continue;
+
+                if (Vector3.Angle(
+                    transform.forward,
+                    direction) > fieldOfViewAngle * 0.5f)
+                {
+                    continue;
+                }
+
+                if (Physics.Raycast(
+                    eyePos,
+                    direction.normalized,
+                    distance,
+                    visionObstacleMask,
+                    QueryTriggerInteraction.Ignore))
+                {
+                    continue;
+                }
+
+                Vector3 currentPosition = sensor.transform.position;
+
+                if (detectedSensors.Add(sensor))
+                {
+                    sensorPositions[sensor] = currentPosition;
+
+                    Debug.Log(
+                        $"[Laser Sensor] Algılandı: {sensor.name} | " +
+                        $"Konum: {currentPosition}"
+                    );
+
+                    continue;
+                }
+
+                if (!sensorPositions.TryGetValue(
+                    sensor,
+                    out Vector3 previousPosition))
+                {
+                    sensorPositions[sensor] = currentPosition;
+                    continue;
+                }
+
+                float movement = Vector3.Distance(
+                    previousPosition,
+                    currentPosition
+                );
+
+                if (movement >= sensorMovementThreshold)
+                {
+                    Debug.Log(
+                        $"[Laser Sensor] Hareket: {sensor.name} | " +
+                        $"Eski: {previousPosition} | " +
+                        $"Yeni: {currentPosition} | " +
+                        $"Mesafe: {movement:F2} m"
+                    );
+
+                    sensorPositions[sensor] = currentPosition;
+                }
+            }
+        }
+
         public void ForceInitialScan()
         {
+            ScanLaserSensors();
+
+            if (MazeControlActive)
+            {
+                DetectedTerminal = null;
+                lastLoggedTerminal = null;
+                return;
+            }
+
             if (knowledgeMap == null ||
                 knowledgeMap.AllNodes == null ||
                 knowledgeMap.AllNodes.Count == 0)
@@ -128,7 +257,6 @@ namespace AI.Core
 
             foreach (var node in knowledgeMap.AllNodes)
             {
-                // Daha önce ziyaret edilmiş düğümlerin durumunu koru.
                 if (node.State == NodeState.Visited ||
                     node.State == NodeState.Checked)
                     continue;
@@ -139,7 +267,6 @@ namespace AI.Core
                 Vector3 dirToNode = nodePos - eyePos;
                 float dist = dirToNode.magnitude;
 
-                // Labirent düğümleri yalnızca yakından keşfedilir.
                 if (dist > mazeDiscoveryDistance)
                     continue;
 
@@ -177,15 +304,14 @@ namespace AI.Core
                 {
                     Debug.Log(
                         $"[Perception Log] Lazer engeli: " +
-laserHit.collider.name +
-" | Layer: " +
-LayerMask.LayerToName(
-    laserHit.collider.gameObject.layer
-)
+                        laserHit.collider.name +
+                        " | Layer: " +
+                        LayerMask.LayerToName(
+                            laserHit.collider.gameObject.layer
+                        )
                     );
                 }
 
-                // Düğüm yalnızca yakın, görüş alanında ve engelsizse keşfedilir.
                 if (!isBlockedByWall &&
                     !isBlockedByLaser &&
                     node.State == NodeState.Unknown)
@@ -198,12 +324,18 @@ LayerMask.LayerToName(
         public DoorTerminal FindVisibleTerminalForDoor(
             Door requiredDoor)
         {
+            if (MazeControlActive)
+                return null;
+
             return ScanForTerminals(requiredDoor);
         }
 
         private DoorTerminal ScanForTerminals(
             Door requiredDoor = null)
         {
+            if (MazeControlActive)
+                return null;
+
             Vector3 eyePos = eyeTransform != null
                 ? eyeTransform.position
                 : transform.position + Vector3.up * 0.3f;
@@ -233,7 +365,6 @@ LayerMask.LayerToName(
                     terminal.transform.position
                 );
 
-                // Mevcut yakın terminal algılama mantığı korunuyor.
                 if (distToTerminal <= 3.0f)
                 {
                     Debug.Log(
@@ -257,7 +388,6 @@ LayerMask.LayerToName(
                     fieldOfViewAngle * 0.5f)
                     continue;
 
-                // Duvar görüşü kapatıyorsa terminali algılama.
                 if (Physics.Raycast(
                     eyePos,
                     dir.normalized,

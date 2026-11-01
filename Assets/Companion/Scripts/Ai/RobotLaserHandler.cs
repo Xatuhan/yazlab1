@@ -14,7 +14,7 @@ namespace AI
 
         private void OnTriggerEnter(Collider other)
         {
-            bool isLaser = other.CompareTag("Laser");
+            bool isLaser = other.gameObject.layer == LayerMask.NameToLayer("Laser");
 
             Debug.Log(
                 $"[ROBOT LASER DEBUG] Object={other.name}, " +

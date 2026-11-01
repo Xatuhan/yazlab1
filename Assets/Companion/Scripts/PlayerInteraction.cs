@@ -51,11 +51,7 @@ public class PlayerInteraction : MonoBehaviour
                 return;
             }
 
-            AirVents vent = hit.collider.GetComponentInParent<AirVents>();
-            if (vent != null)
-            {
-                vent.OpenVent();
-            }
+            
         }
     }
 }

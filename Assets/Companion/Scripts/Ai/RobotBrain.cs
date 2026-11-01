@@ -21,6 +21,8 @@ public class RobotBrain : MonoBehaviour, IPetBrain
 
     public int LaserHitCount { get; private set; }
     public int LaserObservationCount { get; private set; }
+    // Harici bir sistem (ör. labirent raycast modu) hareketi devraldığında true.
+    public bool ExternalControl { get; set; }
     public bool HasEnoughLaserObservations =>
         LaserObservationCount >= observationsToLearn;
 
@@ -43,6 +45,7 @@ public class RobotBrain : MonoBehaviour, IPetBrain
 
     private void Update()
     {
+        if (ExternalControl) return;
         StateMachine.Update();
     }
 
@@ -80,7 +83,6 @@ public class RobotBrain : MonoBehaviour, IPetBrain
         nextLaserResetTime = Time.time + resetCooldown;
 
         LaserHitCount++;
-        LaserObservationCount++;
 
         Debug.Log(
             $"[Laser Learning] Çarpışma: {LaserHitCount} | " +

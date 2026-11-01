@@ -1,27 +1,46 @@
-
 using UnityEngine;
+using System.Collections.Generic;
 
 public class LaserHazard : MonoBehaviour
 {
+    private readonly HashSet<RobotBrain> robotsInside =
+        new HashSet<RobotBrain>();
+
     private void OnTriggerEnter(Collider other)
     {
-        Debug.LogError("[TEST 123] YENİ LASERHAZARD KODU ÇALIŞIYOR");
-
         RobotBrain robot = other.GetComponentInParent<RobotBrain>();
+
+        if (robot == null)
+            return;
+
+        // Aynı robotun birden fazla collider'ı
+        // aynı lazer temasını tekrar tekrar saymasın.
+        if (!robotsInside.Add(robot))
+            return;
 
         Debug.Log(
             $"[LASER DEBUG] Laser: {name} | " +
             $"Object: {other.name} | " +
-            $"Collider: {other.GetType().Name} | " +
-            $"Center: {other.bounds.center} | " +
-            $"Size: {other.bounds.size} | " +
-            $"RobotBrain found: {robot != null}",
+            $"RobotBrain found: True",
             other.gameObject
         );
 
-        if (robot != null)
+        // Maze kontrolü hareketi devraldıysa
+        // ORB sisteminin reset mekanizmasını çalıştırma.
+        if (robot.ExternalControl)
         {
-            robot.HandleLaserHit();
+            Debug.Log("[LaserHazard] Maze kontrolü aktif. ORB reseti engellendi.");
+            return;
         }
+
+        robot.HandleLaserHit();
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        RobotBrain robot = other.GetComponentInParent<RobotBrain>();
+
+        if (robot != null)
+            robotsInside.Remove(robot);
     }
 }
