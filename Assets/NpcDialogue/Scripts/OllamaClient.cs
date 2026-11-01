@@ -11,10 +11,9 @@ using UnityEngine;
 
 namespace YazLab.NpcDialogue
 {
-    // Yerel Ollama'ya async istek atar; her hatayı LlmError'a çevirir, oyuna exception sızdırmaz.
     public sealed class OllamaClient : ILlmClient, IDisposable
     {
-        private const int MaxResponseBytes = 64 * 1024; // beklenmedik dev cevap belleği şişirmesin
+        private const int MaxResponseBytes = 64 * 1024; // dev cevap belleği şişirmesin
 
         private readonly OllamaSettings _settings;
         private readonly Uri _chatUri;
@@ -24,7 +23,6 @@ namespace YazLab.NpcDialogue
         {
             _settings = settings;
             _chatUri = new Uri(new Uri(settings.baseUrl), "/api/chat");
-            // Süreyi kendi iptal belirtecimiz yönetir; böylece zaman aşımını dış iptalden ayırabiliriz.
             _http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
         }
 
@@ -39,7 +37,6 @@ namespace YazLab.NpcDialogue
                     {
                         Content = new StringContent(BuildRequestBody(_settings, messages), Encoding.UTF8, "application/json")
                     };
-                    // ConfigureAwait yok: devam Unity ana iş parçacığında olur, arayüz güvenle güncellenir.
                     using (HttpResponseMessage response = await _http.SendAsync(
                                request, HttpCompletionOption.ResponseHeadersRead, timeout.Token))
                     {
@@ -57,25 +54,24 @@ namespace YazLab.NpcDialogue
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    return LlmResult.Fail(LlmError.Timeout); // bizim süremiz doldu
+                    return LlmResult.Fail(LlmError.Timeout);
                 }
                 catch (OperationCanceledException)
                 {
-                    throw; // oyuncu sahneden çıktı: çağıran sessizce bırakır
+                    throw;
                 }
                 catch (Exception e) when (e is HttpRequestException || e is IOException)
                 {
-                    return LlmResult.Fail(LlmError.ServerUnreachable); // Ollama kapalı ya da bağlantı koptu
+                    return LlmResult.Fail(LlmError.ServerUnreachable);
                 }
                 catch (Exception e)
                 {
                     Debug.LogWarning("Ollama cevabı işlenemedi: " + e.GetType().Name);
-                    return LlmResult.Fail(LlmError.BadResponse); // bozuk JSON vb.
+                    return LlmResult.Fail(LlmError.BadResponse);
                 }
             }
         }
 
-        // Gövde JsonUtility ile üretilir: oyuncu tırnak ya da satır sonu yazsa da JSON bozulmaz.
         internal static string BuildRequestBody(OllamaSettings s, IReadOnlyList<ChatMessage> messages)
         {
             var request = new OllamaChatRequest
@@ -83,18 +79,16 @@ namespace YazLab.NpcDialogue
                 model = s.model,
                 messages = messages.ToArray(),
                 stream = false,
-                think = false, // gemma4'te düşünme varsayılan açık; kapalı olmazsa cevap gecikir
+                think = false, // açıkken cevap gecikiyor
                 keep_alive = s.keepAlive,
                 options = new OllamaOptions { num_ctx = s.numCtx, num_predict = s.numPredict, temperature = s.temperature }
             };
             return JsonUtility.ToJson(request);
         }
 
-        // En çok MaxResponseBytes okur; fazlası gelirse null döner.
-        // ConfigureAwait(false): bayt okumak ana iş parçacığı istemez; her parçada bir kare beklenmesin.
-        // Burada Unity API'si yok; sonuç SendAsync'te ana iş parçacığına bir kez döner.
         private static async Task<string> ReadLimitedAsync(HttpContent content, CancellationToken ct)
         {
+            // her parçada ana iş parçacığına dönmesin
             using (Stream stream = await content.ReadAsStreamAsync().ConfigureAwait(false))
             using (var buffer = new MemoryStream())
             {

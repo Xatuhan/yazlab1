@@ -4,19 +4,17 @@ using UnityEngine;
 
 namespace YazLab.NpcDialogue
 {
-    // items.json'daki bir eşya. Alan adları JSON anahtarlarıyla aynı (JsonUtility).
     [Serializable]
     public class ItemData
     {
-        public string id;        // kodda kullanılan kimlik (ör. "ring")
-        public string label;     // düğmede görünen ad
-        public string eventText; // eşya gösterilince modele giden olay metni; "[Olay]" ile başlar
+        public string id;
+        public string label;
+        public string eventText;
     }
 
-    // Oyuncunun üzerindeki eşyalar. Dosya düzenlenebilir olduğu için her alan doğrulanır.
     public class ItemCatalog
     {
-        public const string EventPrefix = "[Olay]"; // oyuncu "[" yazamadığı için bu öneki yalnızca oyun üretir
+        public const string EventPrefix = "[Olay]"; // oyuncu "[" yazamaz
         private const int MaxItems = 5;
         private const int MaxEventChars = 400;
 

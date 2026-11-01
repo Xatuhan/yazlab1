@@ -6,8 +6,6 @@ using UnityEngine.UI;
 
 namespace YazLab.NpcDialogue
 {
-    // Bitiş ekranı: ne olduğunu (başlık), bekçinin son sözünü ve kaç mesajda bittiğini yazar.
-    // Oyun durur, iki düğme çıkar.
     public class EndScreen : MonoBehaviour
     {
         [SerializeField] private GameObject panel;
@@ -15,10 +13,8 @@ namespace YazLab.NpcDialogue
         [SerializeField] private TMP_Text detailText;
         [SerializeField] private Button restartButton;
         [SerializeField] private Button quitButton;
-        // Oyuncu kapının açıldığını ve bekçinin son sözünü görsün diye ekran biraz gecikmeyle açılır.
         [SerializeField] private float showDelaySeconds = 2f;
 
-        // Metinler Inspector'dan değişir (hikâye değişirse kod değişmez). {n} = mesaj sayısı.
         [SerializeField] private string unlockedTitle = "Seni tanıdı. Kapı açıldı.";
         [SerializeField] private string unlockedCount = "{n} mesajda onu ikna ettin.";
         [SerializeField] private string defeatedTitle = "Karın saldırıya geçti. Savaşı kaybettin.";
@@ -26,7 +22,7 @@ namespace YazLab.NpcDialogue
 
         private void Awake()
         {
-            detailText.richText = false; // bekçinin sözü düz metin
+            detailText.richText = false;
             panel.SetActive(false);
             restartButton.onClick.AddListener(Restart);
             quitButton.onClick.AddListener(Quit);
@@ -51,22 +47,19 @@ namespace YazLab.NpcDialogue
         {
             yield return new WaitForSecondsRealtime(showDelaySeconds);
             titleText.text = title;
-            // Replace: Inspector'da yazılan metin bozuk olsa da string.Format gibi hata fırlatmaz.
             detailText.text = "Bekçi: \"" + reply + "\"\n" + countFormat.Replace("{n}", turns.ToString());
             panel.SetActive(true);
-            Time.timeScale = 0f; // oyun durur (arayüz unscaled zamanla çalışmaya devam eder)
+            Time.timeScale = 0f;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
 
         private void Restart()
         {
-            // Önce zaman geri açılır; açılmazsa yeni sahne donuk başlar (timeScale sahneler arası korunur).
-            Time.timeScale = 1f;
+            Time.timeScale = 1f; // sahneler arası korunuyor
             int index = SceneManager.GetActiveScene().buildIndex;
             if (index < 0)
             {
-                // Sahne Build Profiles listesinde değil (ör. B'nin test sahnesi); çökmek yerine uyar.
                 Debug.LogWarning("Yeniden Başla: sahne build listesinde değil, yeniden yüklenemiyor.");
                 return;
             }
@@ -76,7 +69,7 @@ namespace YazLab.NpcDialogue
         private void Quit()
         {
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false; // editörde Application.Quit işe yaramaz
+            UnityEditor.EditorApplication.isPlaying = false;
 #else
             Application.Quit();
 #endif

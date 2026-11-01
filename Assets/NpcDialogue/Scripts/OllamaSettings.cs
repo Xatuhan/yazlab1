@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace YazLab.NpcDialogue
 {
-    // ollama_settings.json içeriği. Alan adları JSON anahtarlarıyla aynı (JsonUtility).
     [Serializable]
     public class OllamaSettings
     {
@@ -11,15 +10,14 @@ namespace YazLab.NpcDialogue
         public string model;
         public int timeoutSeconds;
         public int numCtx;
-        public int numPredict;    // cevap en çok kaç token: gecikmeyi ve boyutu sınırlar
-        public float temperature; // düşük = kurallara sadık; 0,5 injection ölçümüyle seçildi
+        public int numPredict;
+        public float temperature;
         public string keepAlive;
         public int maxInputChars;
         public int maxReplyChars;
         public int historyTurns;
-        public int patienceTurns; // bu kadar turda ikna olmazsa saldırır: konuşma sonsuza kadar sürmez
+        public int patienceTurns;
 
-        // Dosya düzenlenebilir olduğu için her alan doğrulanır. error, oyuncuya gösterilecek Türkçe metindir.
         public static bool TryParse(string json, out OllamaSettings settings, out string error)
         {
             settings = null;
@@ -55,7 +53,6 @@ namespace YazLab.NpcDialogue
                 error = "Ayar dosyasındaki sayılar sıfırdan büyük olmalı.";
                 return false;
             }
-            // Eksik alan 0 olur; 0 her cevabı aynı yapar (PDF "dinamik yanıt"), 2 üstü anlamsız.
             if (s.temperature <= 0f || s.temperature > 2f)
             {
                 error = "Ayar dosyasındaki temperature 0 ile 2 arasında olmalı.";
@@ -67,7 +64,7 @@ namespace YazLab.NpcDialogue
             return true;
         }
 
-        // Yalnızca bu makinedeki Ollama: başka bir adrese oyuncu verisi gönderilmez.
+        // oyuncu yazısı bu bilgisayardan çıkmasın
         private static bool IsLocalHttp(string url)
         {
             return Uri.TryCreate(url, UriKind.Absolute, out Uri uri)

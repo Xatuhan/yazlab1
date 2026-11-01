@@ -3,8 +3,6 @@ using System.Text;
 
 namespace YazLab.NpcDialogue
 {
-    // Oyun komutu içeren oyuncu mesajını modele hiç göndermemek için. Meşru bir oyuncu bunları yazmaz.
-    // Kurallar 2026-10-17 prompt injection ölçümüyle seçildi (290 denemede 0 kandırma, 0 yanlış engel).
     public static class InputFilter
     {
         private static readonly HashSet<char> Symbols = new HashSet<char> { '{', '}', '<', '>', '[', ']' };
@@ -14,8 +12,6 @@ namespace YazLab.NpcDialogue
             "allow", "deny", "attack", "action", "json", "system", "sistem", "reply", "prompt"
         };
 
-        // Harfler arasına işaret koyulsa da ("a-l-l-o-w") yakalananlar. deny/system burada yok:
-        // "kaleden yürüdüm" birleşince "deny" içerir, masum cümle engellenirdi.
         private static readonly string[] Glued = { "allow", "attack", "action", "json" };
 
         public static bool IsBlocked(string text)
@@ -31,7 +27,6 @@ namespace YazLab.NpcDialogue
                     return true;
                 if (char.IsLetter(c))
                 {
-                    // Latin dışı harf (ör. Kiril "а" ile "аllow") benzer görünen harfle kandırmayı önler.
                     if (c > 'ɏ')
                         return true;
                     word.Append(c);
@@ -52,7 +47,6 @@ namespace YazLab.NpcDialogue
             return false;
         }
 
-        // Kelime bittiğinde yasak kelime mi diye bakar ve tamponu boşaltır.
         private static bool EndWord(StringBuilder word)
         {
             bool hit = word.Length > 0 && Words.Contains(word.ToString());
@@ -60,7 +54,7 @@ namespace YazLab.NpcDialogue
             return hit;
         }
 
-        // Türkçe I/İ/ı tuzağı: hepsi önce sade "i" olur, sonra kültürden bağımsız küçültülür.
+        // Türkçe I/İ/ı farkı kalksın
         private static string Normalize(string text) =>
             text.Replace('İ', 'i').Replace('I', 'i').Replace('ı', 'i').ToLowerInvariant();
     }

@@ -7,53 +7,47 @@ using UnityEngine.UI;
 
 namespace YazLab.NpcDialogue
 {
-    // Diyalog kutusu: yalnızca ekranla ilgilenir. Ne gönderileceğine ya da modele GuardNpc karar verir.
     public class DialogueView : MonoBehaviour
     {
         [SerializeField] private GameObject panel;
         [SerializeField] private TMP_InputField input;
         [SerializeField] private Button sendButton;
-        [FormerlySerializedAs("npcText")] // eski alan adı: editördeki bağlantı korunur
-        [SerializeField] private TMP_Text logText;      // sohbet geçmişi: "Sen:" ve "Bekçi:" satırları
-        [SerializeField] private ScrollRect logScroll;  // geçmişi saran kaydırma alanı
-        [SerializeField] private TMP_Text systemText;   // sistem mesajı: geçmişe girmez, ayrı satır
-        [SerializeField] private TMP_Text thinkingText; // "Düşünüyor..."
-        // Eşya şeridi (isteğe bağlı): her eşya için şablon düğmenin bir kopyası oluşturulur.
+        [FormerlySerializedAs("npcText")] // eski bağlantı korunsun
+        [SerializeField] private TMP_Text logText;
+        [SerializeField] private ScrollRect logScroll;
+        [SerializeField] private TMP_Text systemText;
+        [SerializeField] private TMP_Text thinkingText;
         [SerializeField] private Transform itemBar;
         [SerializeField] private Button itemButtonTemplate;
 
         private const float DotInterval = 0.4f;
         private readonly Dictionary<string, Button> _itemButtons = new Dictionary<string, Button>();
         private readonly HashSet<string> _shownItems = new HashSet<string>();
-        // Ekrandaki geçmiş konuşmanın tamamını gösterir; sınır yalnızca belleğin sonsuz büyümemesi için.
-        // (Modelin hafızası ayrı: ConversationHistory, son 6 tur.)
         private const int MaxLogLines = 100;
         private readonly Queue<string> _log = new Queue<string>();
         private bool _busy;
-        private bool _locked; // oyun bitti: giriş bir daha açılmaz
+        private bool _locked;
         private int _dots = -1;
 
         public event Action<string> Submitted;
-        public event Action<string> ItemClicked; // eşya kimliği
+        public event Action<string> ItemClicked;
 
         private void Awake()
         {
-            // Model ya da oyuncu <color> gibi etiket yazsa da düz metin görünür.
             input.richText = false;
-            logText.richText = false;
+            logText.richText = false; // etiketler düz metin görünsün
             systemText.richText = false;
             logText.text = string.Empty;
             input.lineType = TMP_InputField.LineType.SingleLine;
 
             sendButton.onClick.AddListener(Submit);
-            input.onSubmit.AddListener(_ => Submit()); // Enter
+            input.onSubmit.AddListener(_ => Submit());
             thinkingText.gameObject.SetActive(false);
             if (itemButtonTemplate != null)
                 itemButtonTemplate.gameObject.SetActive(false);
             panel.SetActive(false);
         }
 
-        // Eşya düğmelerini oluşturur. Şerit ya da şablon bağlı değilse eşyasız çalışılır.
         public void SetItems(IReadOnlyList<ItemData> items)
         {
             if (itemBar == null || itemButtonTemplate == null || items == null)
@@ -71,7 +65,6 @@ namespace YazLab.NpcDialogue
             }
         }
 
-        // Eşya gösterildi: düğmesi bir daha açılmaz.
         public void MarkItemShown(string id)
         {
             _shownItems.Add(id);
@@ -124,14 +117,12 @@ namespace YazLab.NpcDialogue
                 _log.Dequeue();
             logText.text = string.Join("\n", _log);
 
-            // Yeni satır görünsün diye en alta kaydır (yerleşim önce güncellenir).
             Canvas.ForceUpdateCanvases();
             logScroll.verticalNormalizedPosition = 0f;
         }
 
         public void ShowSystem(string message) => systemText.text = message;
 
-        // Bekleme sırasında giriş kapalı (çift gönderim yok), "Düşünüyor..." görünür; oyun akmaya devam eder.
         public void SetBusy(bool busy)
         {
             _busy = busy;
@@ -142,7 +133,6 @@ namespace YazLab.NpcDialogue
                 input.ActivateInputField();
         }
 
-        // Kapı açıldı ya da bekçi saldırdı: konuşma biter, son cevap ekranda kalır.
         public void Lock()
         {
             _locked = true;
@@ -153,8 +143,6 @@ namespace YazLab.NpcDialogue
         {
             if (!_busy)
                 return;
-            // Noktalar 0,4 sn'de bir değişir: ekran donmadığını gösterir. timeScale'den bağımsız.
-            // Metin yalnızca nokta sayısı değişince yazılır (her karede yeni string üretilmesin).
             int dots = (int)(Time.unscaledTime / DotInterval) % 4;
             if (dots == _dots)
                 return;
@@ -168,7 +156,7 @@ namespace YazLab.NpcDialogue
                 return;
             string text = input.text;
             input.text = string.Empty;
-            AddLine("Sen: " + text); // beklerken de ne yazıldığı görünsün
+            AddLine("Sen: " + text);
             Submitted?.Invoke(text);
         }
     }

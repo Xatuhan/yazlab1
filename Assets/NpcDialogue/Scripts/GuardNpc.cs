@@ -6,27 +6,23 @@ using UnityEngine;
 
 namespace YazLab.NpcDialogue
 {
-    // Bekçinin kendisi: dosyaları okur, oyuncu yaklaşınca diyaloğu açar, turları GuardConversation'a verir.
-    // Bekçiyi taşıyan nesnede trigger collider olmalı. Companion'ı tanımaz.
     public class GuardNpc : MonoBehaviour
     {
         [SerializeField] private DialogueView view;
         [SerializeField] private string playerTag = "Player";
-        // Diyalogda kapatılır, sonra eski hâline döner (ör. A'nın PlayerMovement, PlayerInteraction, RobotClickToMove).
-        // Böylece yazarken oyuncu yürümez, Gönder'e tıklamak robotu götürmez; A'nın koduna dokunulmaz.
         [SerializeField] private Behaviour[] disableWhileTalking = Array.Empty<Behaviour>();
 
         private const string Folder = "NpcDialogue";
 
         private OllamaClient _client;
-        private OllamaSettings _settings; // hata mesajlarında model adı ve süre için
+        private OllamaSettings _settings;
         private GuardConversation _conversation;
-        private ItemCatalog _items; // null: eşya yok (dosya yok ya da geçersiz)
+        private ItemCatalog _items;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private string _loadError; // null değilse NPC pasif, oyuncuya sistem mesajı gösterilir
+        private string _loadError;
 
         private bool _open;
-        private bool _finished; // allow ya da attack geldi: oyun bitti
+        private bool _finished;
         private bool[] _wasEnabled;
         private CursorLockMode _cursorLock;
         private bool _cursorVisible;
@@ -59,7 +55,6 @@ namespace YazLab.NpcDialogue
             }
         }
 
-        // Eşyalar isteğe bağlı: dosya yoksa ya da geçersizse eşya şeridi boş kalır, konuşma yine çalışır.
         private void LoadItems(string path)
         {
             if (!File.Exists(path))
@@ -102,7 +97,6 @@ namespace YazLab.NpcDialogue
                 disableWhileTalking[i].enabled = false;
             }
 
-            // Yazı kutusuna tıklanabilsin; kapanınca önceki duruma döner.
             _cursorLock = Cursor.lockState;
             _cursorVisible = Cursor.visible;
             Cursor.lockState = CursorLockMode.None;
@@ -115,7 +109,6 @@ namespace YazLab.NpcDialogue
 
         private void Close()
         {
-            // Oyun bittiyse bileşenler kapalı, imleç serbest kalır (bitiş ekranının düğmeleri için).
             if (!_open || _finished)
                 return;
             _open = false;
@@ -130,14 +123,13 @@ namespace YazLab.NpcDialogue
 
         private void OnSubmitted(string text) => RunTurn(() => _conversation.SendAsync(text, _cts.Token), null);
 
-        // Eşya göstermek. Dışarıdan da çağrılabilir (ör. A'nın envanteri): guard.ShowItem("ring").
         public void ShowItem(string itemId)
         {
             if (_items != null && _items.TryGet(itemId, out ItemData item))
                 RunTurn(() => _conversation.ShowItemAsync(item, _cts.Token), itemId);
         }
 
-        // async void yalnızca burada; tüm gövde try/catch: hiçbir hata oyunu çökertmez.
+        // tek async void; hata oyunu çökertmesin
         private async void RunTurn(Func<Task<TurnOutcome>> turn, string itemId)
         {
             if (_conversation == null || _conversation.IsBusy || _finished)
@@ -151,7 +143,6 @@ namespace YazLab.NpcDialogue
             }
             catch (OperationCanceledException)
             {
-                // Sahne kapandı; yapılacak bir şey yok.
             }
             catch (Exception e)
             {
@@ -161,7 +152,7 @@ namespace YazLab.NpcDialogue
             }
             finally
             {
-                if (view != null) // nesne yok edildiyse arayüze dokunma
+                if (view != null)
                     view.SetBusy(false);
             }
         }
@@ -174,7 +165,6 @@ namespace YazLab.NpcDialogue
                     if (itemId != null)
                         view.MarkItemShown(itemId);
                     view.AddNpcLine(outcome.Decision.Reply);
-                    // allow → kapı + kazandın, attack → kaybettin, deny → konuşma sürer.
                     if (NpcEvents.Publish(outcome.Decision, _conversation.AnsweredTurns))
                     {
                         _finished = true;
@@ -182,7 +172,7 @@ namespace YazLab.NpcDialogue
                     }
                     break;
                 case TurnStatus.Rejected:
-                    if (itemId == null) // eşya zaten gösterilmişse sessizce yok sayılır
+                    if (itemId == null)
                         view.ShowSystem(SystemMessages.InputRejected);
                     break;
                 case TurnStatus.Failed:
@@ -193,7 +183,7 @@ namespace YazLab.NpcDialogue
 
         private void OnDestroy()
         {
-            _cts.Cancel(); // süren istek iptal: cevap yok edilmiş nesneye dönmez
+            _cts.Cancel(); // cevap yok edilmiş nesneye dönmesin
             _cts.Dispose();
             _client?.Dispose();
             if (view != null)

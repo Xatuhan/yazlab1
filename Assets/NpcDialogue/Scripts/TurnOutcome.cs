@@ -2,13 +2,12 @@ namespace YazLab.NpcDialogue
 {
     public enum TurnStatus
     {
-        Answered, // bekçi cevap verdi
-        Rejected, // mesaj boş, çok uzun ya da oyun komutu içeriyor; modele gitmedi
-        Busy,     // önceki istek sürüyor
-        Failed    // Ollama hatası ya da anlaşılamayan cevap (Error alanında)
+        Answered,
+        Rejected,
+        Busy,
+        Failed
     }
 
-    // Bir konuşma turunun sonucu. Arayüz bunu bekçi sözüne ya da sistem mesajına çevirir.
     public readonly struct TurnOutcome
     {
         public TurnStatus Status { get; }

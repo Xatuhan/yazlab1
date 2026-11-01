@@ -1,16 +1,14 @@
 namespace YazLab.NpcDialogue
 {
-    // Oyuncuya ayrı sistem mesajı gösterilecek hata türleri.
     public enum LlmError
     {
         None,
-        ServerUnreachable, // Ollama kapalı
-        ModelNotFound,     // model indirilmemiş (404)
-        Timeout,           // zamanında cevap yok
-        BadResponse        // cevap boş ya da anlaşılamadı
+        ServerUnreachable,
+        ModelNotFound,
+        Timeout,
+        BadResponse
     }
 
-    // İstemcinin döndürdüğü ham sonuç: ya model metni ya da hata türü.
     public class LlmResult
     {
         public LlmError Error { get; }

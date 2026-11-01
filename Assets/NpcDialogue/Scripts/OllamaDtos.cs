@@ -2,7 +2,6 @@ using System;
 
 namespace YazLab.NpcDialogue
 {
-    // Ollama /api/chat istek ve cevabının C# karşılıkları. Alan adları Ollama'nın JSON anahtarlarıyla aynı.
 
     [Serializable]
     internal class OllamaChatRequest
@@ -24,7 +23,6 @@ namespace YazLab.NpcDialogue
         public float temperature;
     }
 
-    // format alanına verilen JSON şeması: Ollama, modeli yazarken bu biçime zorlar.
     [Serializable]
     internal class ReplySchema
     {
@@ -44,7 +42,7 @@ namespace YazLab.NpcDialogue
     internal class EnumProperty
     {
         public string type = "string";
-        public string[] @enum = { "allow", "deny", "attack" }; // JSON'da "enum" anahtarı olur
+        public string[] @enum = { "allow", "deny", "attack" };
     }
 
     [Serializable]

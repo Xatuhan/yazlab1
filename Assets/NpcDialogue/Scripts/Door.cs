@@ -2,7 +2,6 @@ using UnityEngine;
 
 namespace YazLab.NpcDialogue
 {
-    // Kilitli kapı: yalnızca DoorUnlocked'ı dinler ve açılır (nesne kaybolur). Başka mantık yok.
     public class Door : MonoBehaviour
     {
         private void OnEnable() => NpcEvents.DoorUnlocked += Open;

@@ -1,7 +1,5 @@
 namespace YazLab.NpcDialogue
 {
-    // Oyuncuya gösterilen sistem mesajları (bekçinin sözü değil; ayrı sarı satırda çıkar).
-    // Hepsi tek yerde: metin değişirse tek dosya değişir. PDF 2.9 / 4.3: anlamlı geri bildirim.
     public static class SystemMessages
     {
         public const string InputRejected = "Bu mesaj gönderilmedi: oyun komutu ya da izin verilmeyen işaret içeriyor.";
