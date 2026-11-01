@@ -1,0 +1,120 @@
+
+using System.Collections.Generic;
+using UnityEngine;
+
+public class LaserGroup : MonoBehaviour, IActivatable
+{
+    [Header("Lazer Iþýný Nesneleri (Manuel)")]
+    [Tooltip("Kapatýlacak lazer ýþýnlarý. Emitter modellerini eklemeyin.")]
+    [SerializeField]
+    private List<GameObject> laserBeams =
+        new List<GameObject>();
+
+    [Header("Otomatik Bulma Ayarlarý")]
+    [Tooltip("Atanýrsa yalnýzca bu nesnenin altýndaki eþleþen nesneler taranýr.")]
+    [SerializeField] private Transform laserParentGroup;
+
+    [Tooltip("Otomatik bulmada aranacak nesne adý.")]
+    [SerializeField] private string beamNameFilter = "Light";
+
+    [Header("Oyuncuya Hasar Veren Lazer Collider'larý")]
+    [Tooltip("Lazerler kapanýnca devre dýþý býrakýlacak ayrý collider nesneleri.")]
+    [SerializeField]
+    private List<GameObject> laserHazardObjects =
+        new List<GameObject>();
+
+    [Header("Lazer Etkileþim Alaný")]
+    [Tooltip("Lazerler kapanýnca devre dýþý býrakýlacak Laser_Interaction_Zone.")]
+    [SerializeField] private GameObject laserInteractionZone;
+
+    public bool IsActivated { get; private set; } = false;
+
+    private void Awake()
+    {
+        if (laserParentGroup != null)
+        {
+            Transform[] allChildren =
+                laserParentGroup.GetComponentsInChildren<Transform>(true);
+
+            foreach (Transform child in allChildren)
+            {
+                if (child == laserParentGroup)
+                    continue;
+
+                if (string.IsNullOrEmpty(beamNameFilter) ||
+                    child.name.ToLower().Contains(
+                        beamNameFilter.ToLower()))
+                {
+                    if (!laserBeams.Contains(child.gameObject))
+                    {
+                        laserBeams.Add(child.gameObject);
+                    }
+                }
+            }
+        }
+        else if (laserBeams.Count == 0)
+        {
+            Transform[] allSceneTransforms =
+                FindObjectsByType<Transform>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None
+                );
+
+            foreach (Transform t in allSceneTransforms)
+            {
+                if (!string.IsNullOrEmpty(beamNameFilter) &&
+                    t.name.ToLower().Contains(
+                        beamNameFilter.ToLower()))
+                {
+                    if (!laserBeams.Contains(t.gameObject))
+                    {
+                        laserBeams.Add(t.gameObject);
+                    }
+                }
+            }
+
+            Debug.Log(
+                $"[LaserGroup] {laserBeams.Count} lazer ýþýný bulundu."
+            );
+        }
+    }
+
+    public void Activate()
+    {
+        if (IsActivated)
+            return;
+
+        IsActivated = true;
+
+        // 1. Lazer ýþýnlarýný kapat.
+        foreach (GameObject beam in laserBeams)
+        {
+            if (beam != null)
+            {
+                beam.SetActive(false);
+            }
+        }
+
+        // 2. Oyuncuyu baþlangýca döndüren ayrý collider nesnelerini kapat.
+        foreach (GameObject hazardObject in laserHazardObjects)
+        {
+            if (hazardObject != null)
+            {
+                hazardObject.SetActive(false);
+            }
+        }
+
+        // 3. Lazer etkileþim alanýný kapat.
+        if (laserInteractionZone != null)
+        {
+            laserInteractionZone.SetActive(false);
+        }
+
+        Debug.Log(
+            $"[LaserGroup] {gameObject.name}: " +
+            $"{laserBeams.Count} ýþýn, " +
+            $"{laserHazardObjects.Count} collider nesnesi ve " +
+            $"Laser Interaction Zone devre dýþý býrakýldý."
+        );
+    }
+}
