@@ -289,7 +289,7 @@ Sınırlılık: savunma bu cümle setine bakılarak ayarlandı; ayar sırasında
 | Ollama kapalı | bağlantı reddi (`HttpRequestException`) → `ServerUnreachable` | "Ollama'ya ulaşılamıyor. Ollama uygulamasını açıp tekrar deneyin." | oyunda denendi; aynı oturumda Ollama açılınca toparlandı |
 | Model yüklü değil | Ollama 404 → `ModelNotFound` | "'<model>' modeli bulunamadı. Terminalde 'ollama pull <model>' ile indirin." | oyunda denendi (geçici model adı) + gerçek Ollama testi |
 | Zaman aşımı | kendi iptal belirtecimiz (60 sn) → `Timeout`; istek iptal edilir | "Model 60 saniyede cevap vermedi. Tekrar deneyin." | oyunda denendi (geçici 1 sn) + test |
-| Geçersiz yanıt | JSON değil / boş / 64 KB'tan büyük / 500 → `BadResponse` | "Bekçinin cevabı anlaşılamadı. Tekrar deneyin." | 5 test (şema yüzünden oyunda doğal oluşmaz) |
+| Geçersiz yanıt | JSON değil / boş / 64 KB'tan büyük / 500 → `BadResponse` | "Güvenlik şefinin cevabı anlaşılamadı. Tekrar deneyin." | 5 test (şema yüzünden oyunda doğal oluşmaz) |
 | Oyun komutu içeren mesaj | `InputFilter` | "Bu mesaj gönderilmedi: oyun komutu ya da izin verilmeyen işaret içeriyor." | oyunda denendi + 26 test |
 | Ayar dosyası bozuk / eksik | `OllamaSettings` doğrulaması | ayrıntılı Türkçe mesaj, NPC pasif | 20 test |
 | Oyuncu sahneden çıkar | dış iptal; cevap yok edilmiş nesneye dönmez | — | test |

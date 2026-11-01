@@ -47,7 +47,7 @@ namespace YazLab.NpcDialogue
         {
             yield return new WaitForSecondsRealtime(showDelaySeconds);
             titleText.text = title;
-            detailText.text = "Bekçi: \"" + reply + "\"\n" + countFormat.Replace("{n}", turns.ToString());
+            detailText.text = "Güvenlik Şefi: \"" + reply + "\"\n" + countFormat.Replace("{n}", turns.ToString());
             panel.SetActive(true);
             Time.timeScale = 0f;
             Cursor.lockState = CursorLockMode.None;

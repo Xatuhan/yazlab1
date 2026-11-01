@@ -106,7 +106,7 @@ namespace YazLab.NpcDialogue
 
         public void AddNpcLine(string reply)
         {
-            AddLine("Bekçi: " + reply);
+            AddLine("Güvenlik Şefi: " + reply);
             systemText.text = string.Empty;
         }
 
