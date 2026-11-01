@@ -1,0 +1,19 @@
+{
+    "items": [
+        {
+            "id": "ring",
+            "label": "Yüzük",
+            "eventText": "[Olay] Yabancı sana bir evlilik yüzüğü uzatıyor. Bu, senin parmağındaki yüzüğün tıpatıp eşi; içinde ikinizin yazısı var: \"İyi günde de kötü günde de beraber\". Bu yüzüğü yalnızca kocan taşıyordu. Sarsıldın, ama yüzük çalınmış da olabilir."
+        },
+        {
+            "id": "id_card",
+            "label": "Kimlik kartı",
+            "eventText": "[Olay] Yabancı sana bir kimlik kartı uzatıyor. Bu, The Ark'ın deney kartı: \"Proje Lazarus - Denek 7\". Kocanla bir bağını göstermiyor; aksine şirketin adamı olabilir."
+        },
+        {
+            "id": "photo",
+            "label": "Fotoğraf",
+            "eventText": "[Olay] Yabancı sana eski bir fotoğraf uzatıyor. Fotoğraftaki ailenin hiçbirini tanımıyorsun; seninle ya da kocanla hiçbir ilgisi yok. Sana yalan söylüyor olabilir."
+        }
+    ]
+}
