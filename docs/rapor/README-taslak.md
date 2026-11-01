@@ -91,9 +91,6 @@ Robot, farklı başlangıç konumlarından labirentteki şaltere gönderildi.
 Başarı oranı **%80** (8/10) · başarılı denemelerin ortalama süresi **6,53 sn** (52,25 / 8) · en hızlı 4,30 sn (T9) · toplam yeniden rota 22.
 
 T4: robot sağdaki başlangıç konumundan labirente girdi, içeride dolaştı ama şalteri bulamadı; başlangıç bölgesine dönüp girişe yönelirken lazere çarptı.
-
-T10: ⟨A: başarısızlık açıklaması⟩
-
 ⟨A: "yeniden rota" ve sürenin nasıl ölçüldüğü (bir cümle), ekran görüntüleri⟩
 
 ### 5.2 LLM NPC
