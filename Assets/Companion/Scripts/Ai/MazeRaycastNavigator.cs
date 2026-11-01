@@ -6,6 +6,12 @@ using UnityEngine.AI;
 [RequireComponent(typeof(MazeKnowledge))]
 public class MazeRaycastNavigator : MonoBehaviour
 {
+    [Header("Þalter Algýlama")]
+    [SerializeField] private float terminalDetectionDistance = 1.5f;
+    [SerializeField] private float terminalCheckInterval = 0.2f;
+
+    private float nextTerminalCheckTime;
+
     [Header("Katmanlar")]
     [SerializeField] private LayerMask wallMask;
     [SerializeField] private LayerMask laserMask;
@@ -73,6 +79,7 @@ public class MazeRaycastNavigator : MonoBehaviour
 
         hasRegisteredCell = false;
         nextDecisionTime = 0f;
+        nextTerminalCheckTime = 0f;
         movingToEntry = true;
 
         SetActive(true);
@@ -166,6 +173,7 @@ public class MazeRaycastNavigator : MonoBehaviour
                 movingToEntry = false;
                 hasRegisteredCell = false;
                 nextDecisionTime = 0f;
+                nextTerminalCheckTime = 0f;
                 moveDir = transform.forward;
 
                 Debug.Log(
@@ -176,7 +184,14 @@ public class MazeRaycastNavigator : MonoBehaviour
             return;
         }
 
-        // AÞAMA 2: Mevcut raycast keþif sistemi.
+        // AÞAMA 2: Yakýndaki þalterleri kontrol et.
+        FindNearbyTerminal();
+
+        // Þalter algýlandýysa kontrol baþka state'e devredilmiþtir.
+        if (!IsActive)
+            return;
+
+        // AÞAMA 3: Mevcut raycast keþif sistemi.
         RegisterVisit();
 
         if (Time.time >= nextDecisionTime)
@@ -214,12 +229,68 @@ public class MazeRaycastNavigator : MonoBehaviour
         }
     }
 
+    private void FindNearbyTerminal()
+    {
+        if (Time.time < nextTerminalCheckTime)
+            return;
+
+        nextTerminalCheckTime =
+            Time.time + terminalCheckInterval;
+
+        DoorTerminal nearest = null;
+        float nearestDistance = terminalDetectionDistance;
+
+        foreach (DoorTerminal terminal in DoorTerminal.All)
+        {
+            if (terminal == null || terminal.IsUsed)
+                continue;
+
+            Vector3 terminalPosition = terminal.transform.position;
+
+            if (!mazeKnowledge.IsInsideMaze(terminalPosition))
+                continue;
+
+            float distance = Vector3.Distance(
+                transform.position,
+                terminalPosition
+            );
+
+            if (distance <= nearestDistance)
+            {
+                nearestDistance = distance;
+                nearest = terminal;
+            }
+        }
+
+        if (nearest == null)
+            return;
+
+        Debug.Log(
+            $"[MazeRaycast] Þalter algýlandý: {nearest.name} | " +
+            $"Mesafe: {nearestDistance:F2}m"
+        );
+
+        // Önce Maze navigasyonunu kapat.
+        // Böylece kendi hareket kontrolü Agent rotasýný ezmez.
+        SetActive(false);
+
+        // Mevcut þalter yaklaþma ve etkileþim sistemine devret.
+        brain.StateMachine.ChangeState(
+            new AI.States.PetInvestigateState(brain, nearest)
+        );
+
+        Debug.Log(
+            $"[MazeRaycast] Kontrol PetInvestigateState'e devredildi: {nearest.name}"
+        );
+    }
+
     private Vector3 ChooseDirection()
     {
         int outsideBoundsCount = 0;
         int laserBlockedCount = 0;
         int wallBlockedCount = 0;
         int acceptedCount = 0;
+
         Vector3 origin =
             transform.position + Vector3.up * scanHeight;
 
@@ -233,8 +304,6 @@ public class MazeRaycastNavigator : MonoBehaviour
             Vector3 dir =
                 Quaternion.Euler(0f, a, 0f) * transform.forward;
 
-            // Bir sonraki hedef hücre Maze dýþýnda kalýyorsa
-            // bu yönü deðerlendirme.
             Vector3 nextPosition =
                 transform.position + dir * 1.5f;
 
@@ -265,6 +334,7 @@ public class MazeRaycastNavigator : MonoBehaviour
                     hit.collider.gameObject.layer,
                     laserMask
                 );
+
                 if (laserHit)
                 {
                     Debug.Log(
@@ -282,14 +352,12 @@ public class MazeRaycastNavigator : MonoBehaviour
                 );
             }
 
-            // Yalnýzca Maze sýnýrlarý içindeki boþ alanlarý kaydet.
             mazeKnowledge.ObserveClearRay(
                 origin,
                 dir,
                 clear
             );
 
-            // Duvarlarý kaydet.
             if (wallHit)
             {
                 Debug.Log(
@@ -300,14 +368,12 @@ public class MazeRaycastNavigator : MonoBehaviour
                 mazeKnowledge.ObserveWall(hit.point);
             }
 
-            // Tehlikeli lazer yönlerini ele.
             if (laserHit && clear < laserSafeDistance)
             {
                 laserBlockedCount++;
                 continue;
             }
 
-            // Duvara fazla yakýn yönleri ele.
             if (wallHit && clear < wallMinDistance)
             {
                 wallBlockedCount++;
@@ -325,7 +391,9 @@ public class MazeRaycastNavigator : MonoBehaviour
             score -= mazeKnowledge.GetVisitCount(
                 mazeKnowledge.WorldToCell(nextPosition)
             ) * visitPenalty;
+
             acceptedCount++;
+
             if (score > bestScore)
             {
                 bestScore = score;
@@ -333,7 +401,6 @@ public class MazeRaycastNavigator : MonoBehaviour
             }
         }
 
-        // Teþhis sonuçlarýný her durumda yazdýr.
         Debug.Log(
             $"[MAZE DIAGNOSTIC] " +
             $"Bounds dýþý: {outsideBoundsCount} | " +
