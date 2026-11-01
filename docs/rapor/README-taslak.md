@@ -44,6 +44,21 @@ flowchart LR
 
 ⟨A: robotun algılama (Raycast) ve yol bulma (NavMesh) açıklaması, durum makinesi sınıfları⟩
 
+**Davranış modları.** Mimari, durum tabanlı karma bir yol bulma ve keşif sistemidir (State-Based Hybrid Navigation and Exploration System).
+
+1. **Takip (varsayılan).** Robot oyuncuyu izler. Oyuncu E tuşuyla görev verince ilgili moda geçer.
+2. **Keşif: NavMesh düğümleri.** Robot daha önce bilmediği orb'ları tarar. Engel ile şalter arasındaki ilişkiyi kurduğu objeyi bulunca keşfi keser, şaltere gider ve engeli açar; görev bitince Takip'e döner.
+3. **Labirent: ızgara tabanlı keşif.** Robot önce labirent girişine gider. Labirent alanına girince NavMesh keşfini kapatır ve `MazeRaycastNavigator` ile ızgara algoritmasına geçer. Son şaltere 1,5 m yaklaşınca şalteri kapatır, labirent modundan çıkar ve NavMesh keşfini yeniden başlatır.
+
+| Özellik | NavMesh düğüm algoritması | Labirent ızgara algoritması |
+|---|---|---|
+| Kullanıldığı yer | Normal oyun alanı | Labirent alanı |
+| Keşif birimi | NavMesh düğümleri | Izgara hücreleri |
+| Amaç | Orb keşfi, hedef bulma | Labirenti çözme |
+| Başlama koşulu | Keşif modu | Labirent alanına giriş |
+| Bitiş koşulu | Şalter görevinin tamamlanması | Son şaltere 1,5 m yaklaşma |
+| Sonraki durum | Takip | Takip + NavMesh keşfine dönüş |
+
 Karar akışı: `docs/rapor/companion-akis.md` buraya taşınır.
 
 ## 3. LLM Destekli NPC
@@ -67,10 +82,17 @@ Robot, farklı başlangıç konumlarından labirentteki şaltere gönderildi.
 | T3 | (1.743, 0.1773, 2.906) | 4,77 sn | Başarılı | 0 | Sorun yok |
 | T4 | (4.736, 0.1773, 2.906) | 15,70 sn | Başarısız | 6 | Lazer çarpışması |
 | T5 | (3.831, 0.1773, 2.906) | 8,49 sn | Başarılı | 0 | Sorun yok |
+| T6 | (3.262, 0.1773, 2.906) | 8,11 sn | Başarılı | 4 | 4 kez yeniden rota |
+| T7 | (2.254, 0.1773, 2.906) | 5,58 sn | Başarılı | 3 | 3 kez yeniden rota |
+| T8 | (4.993, 0.1773, 2.906) | 4,99 sn | Başarılı | 0 | Sorun yok |
+| T9 | (1.730, 0.1773, 2.906) | 4,30 sn | Başarılı | 0 | Sorun yok |
+| T10 | (3.870, 0.1773, 2.906) | 3,40 sn | Başarısız | 6 | Lazer çarpışması |
 
-Başarı oranı **%80** (4/5) · başarılı denemelerin ortalama süresi **7,32 sn** · en hızlı 4,77 sn (T3) · toplam yeniden rota 9.
+Başarı oranı **%80** (8/10) · başarılı denemelerin ortalama süresi **6,53 sn** (52,25 / 8) · en hızlı 4,30 sn (T9) · toplam yeniden rota 22.
 
 T4: robot sağdaki başlangıç konumundan labirente girdi, içeride dolaştı ama şalteri bulamadı; başlangıç bölgesine dönüp girişe yönelirken lazere çarptı.
+
+T10: ⟨A: başarısızlık açıklaması⟩
 
 ⟨A: "yeniden rota" ve sürenin nasıl ölçüldüğü (bir cümle), ekran görüntüleri⟩
 
@@ -86,7 +108,7 @@ Unity Test Framework, EditMode: 127 test geçiyor; gerçek Ollama gerektiren 4 t
 
 **Başarılar.**
 * İki yapay zekâ bileşeni ayrı derleme birimlerinde, birbirini tanımadan, yalnızca olaylarla haberleşiyor.
-* Robot, NavMesh ve Raycast ile engeli kendisi aşıyor; 5 denemenin 4'ünde başarılı.
+* Robot, NavMesh ve Raycast ile engeli kendisi aşıyor; 10 denemenin 8'inde başarılı.
 * NPC'nin her sözü yerel modelden geliyor; karar JSON şemasıyla ayrıştırılıyor, 27/27 diyalog turu hatasız, kandırma denemelerinde kapı 0/87 açıldı.
 * Ollama kapalı, model yok, zaman aşımı ve bozuk cevap durumlarında oyun çökmüyor; model beklenirken oyun 216 FPS ile akıyor.
 
