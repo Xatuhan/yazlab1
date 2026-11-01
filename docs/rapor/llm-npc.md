@@ -344,6 +344,34 @@ Sınırlılık: savunma bu cümle setine bakılarak ayarlandı; ayar sırasında
 
 İlke: **hiçbir hata oyunu çökertmez ve hiçbir hata NPC'nin sözü gibi gösterilmez** (PDF 2.9, 4.3). `OllamaClient` her hatayı adlandırılmış bir türe çevirir; exception oyuna sızmaz. Oyuncu, NPC'nin sözünden ayrı sarı bir satırda ne olduğunu ve ne yapacağını görür. Hatalı tur geçmişe girmez; sorun giderilince aynı oturumda konuşma kaldığı yerden sürer.
 
+Bir konuşma turunun akışı, hata yolları dahil (`GuardConversation`):
+
+```mermaid
+flowchart TD
+    A([Oyuncu mesaj yazar ya da eşya gösterir]) --> B{Önceki istek sürüyor mu?}
+    B -->|evet| B1[Yok sayılır: aynı anda tek istek]
+    B -->|hayır| C{Eşya mı?}
+    C -->|hayır| D{Boş, 200 karakterden uzun<br/>ya da oyun komutu içeriyor mu?}
+    D -->|evet| D1[Sarı sistem mesajı<br/>modele gitmez]
+    D -->|hayır| E
+    C -->|evet| C1{Bu eşya daha önce gösterildi mi?}
+    C1 -->|evet| B1
+    C1 -->|hayır| E[Mesaj listesi: kurallar + son 6 tur<br/>+ mesaj + hatırlatma]
+    E --> F{8. tur mu?}
+    F -->|evet| F1[Sabır metni eklenir] --> G
+    F -->|hayır| G[Ollama'ya async istek<br/>Düşünüyor... görünür, oyun akar]
+    G --> H{Cevap geldi mi?}
+    H -->|Ollama kapalı, model yok<br/>ya da 60 sn doldu| H1[Sarı sistem mesajı<br/>tur sayılmaz, tekrar denenebilir]
+    H -->|evet| I{JSON geçerli ve söz dolu mu?}
+    I -->|hayır| H1
+    I -->|evet| J{action}
+    J -->|allow| K([DoorUnlocked: kapı açılır, kazanma ekranı])
+    J -->|attack| L([PlayerDefeated: saldırı, kaybetme ekranı])
+    J -->|deny ya da bilinmeyen| M{8. tur muydu?}
+    M -->|evet| L
+    M -->|hayır| N[Konuşma sürer]
+```
+
 | Durum | Nasıl yakalanır | Oyuncunun gördüğü | Kanıt |
 |---|---|---|---|
 | Ollama kapalı | bağlantı reddi (`HttpRequestException`) → `ServerUnreachable` | "Ollama'ya ulaşılamıyor. Ollama uygulamasını açıp tekrar deneyin." | oyunda denendi; aynı oturumda Ollama açılınca toparlandı |
