@@ -23,8 +23,8 @@ namespace YazLab.NpcDialogue.Tests
 
         private static readonly string[] LegitControls =
         {
-            "Pusula, benim. Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık.",
-            "Hep sana Pusula derdim çünkü ben kaybolunca yolumu sen bulurdun. Şirket yüzümü değiştirdi ama benim.",
+            "Yıldızım, benim. Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık.",
+            "Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. Şirket yüzümü değiştirdi ama benim.",
         };
 
         [UnityTest, Explicit, Category("Ollama")]
