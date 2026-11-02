@@ -19,6 +19,7 @@ namespace YazLab.NpcDialogue
         [SerializeField] private TMP_Text thinkingText;
         [SerializeField] private Transform itemBar;
         [SerializeField] private Button itemButtonTemplate;
+        [SerializeField] private GameObject talkHint;
 
         private const float DotInterval = 0.4f;
         private readonly Dictionary<string, Button> _itemButtons = new Dictionary<string, Button>();
@@ -46,6 +47,13 @@ namespace YazLab.NpcDialogue
             if (itemButtonTemplate != null)
                 itemButtonTemplate.gameObject.SetActive(false);
             panel.SetActive(false);
+            ShowHint(false);
+        }
+
+        public void ShowHint(bool visible)
+        {
+            if (talkHint != null)
+                talkHint.SetActive(visible);
         }
 
         public void SetItems(IReadOnlyList<ItemData> items)

@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace YazLab.NpcDialogue
 {
@@ -21,7 +22,9 @@ namespace YazLab.NpcDialogue
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private string _loadError;
 
+        private bool _inRange;
         private bool _open;
+        private bool _restorePending;
         private bool _finished;
         private bool[] _wasEnabled;
         private CursorLockMode _cursorLock;
@@ -72,21 +75,41 @@ namespace YazLab.NpcDialogue
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag(playerTag))
-                Open();
+            if (!other.CompareTag(playerTag))
+                return;
+            _inRange = true;
+            view.ShowHint(!_open && !_finished);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag(playerTag))
+            if (!other.CompareTag(playerTag))
+                return;
+            _inRange = false;
+            view.ShowHint(false);
+            Close();
+        }
+
+        private void Update()
+        {
+            if (_restorePending)
+                RestoreControls();
+
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null)
+                return;
+            if (!_open && _inRange && keyboard.fKey.wasPressedThisFrame)
+                Open();
+            else if (_open && keyboard.escapeKey.wasPressedThisFrame)
                 Close();
         }
 
         private void Open()
         {
-            if (_open)
+            if (_open || _finished || _restorePending)
                 return;
             _open = true;
+            view.ShowHint(false);
 
             _wasEnabled = new bool[disableWhileTalking.Length];
             for (int i = 0; i < disableWhileTalking.Length; i++)
@@ -113,7 +136,13 @@ namespace YazLab.NpcDialogue
                 return;
             _open = false;
             view.Hide();
+            view.ShowHint(_inRange);
+            _restorePending = true; // aynı Esc duraklatma menüsünü açmasın
+        }
 
+        private void RestoreControls()
+        {
+            _restorePending = false;
             for (int i = 0; i < disableWhileTalking.Length; i++)
                 if (disableWhileTalking[i] != null)
                     disableWhileTalking[i].enabled = _wasEnabled[i];
