@@ -13,7 +13,7 @@ public class PlayerLaserHandler : MonoBehaviour
 
         if (other.name.Contains("Laser") || other.CompareTag("Laser"))
         {
-            Debug.Log("Oyuncu lazere temas etti! Baþlangýca dönülüyor...");
+           
             Respawn();
         }
     }

@@ -77,14 +77,14 @@ public class LaserTriggerZone : MonoBehaviour
 
         if (mazeNavigator.IsActive)
         {
-            Debug.Log("[LaserTriggerZone] Maze zaten aktif.");
+           
             return;
         }
 
         hasCommandedRobot = true;
         mazeNavigator.StartMazeMode();
 
-        Debug.Log("[LaserTriggerZone] E tuşuyla Maze modu başlatıldı.");
+       
     }
 
     private void OnDrawGizmosSelected()

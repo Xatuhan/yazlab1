@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+
 using UnityEngine;
 using UnityEngine.AI;
 using AI.Core;
@@ -13,7 +13,7 @@ namespace AI.States
         private readonly FrontierExplorer explorer;
         private readonly DoorTerminal explicitTerminal;
         private readonly Door explicitDoor;
-        private readonly HashSet<DoorTerminal> failedTerminals = new HashSet<DoorTerminal>();
+        
 
         private ExplorationNode currentTargetNode;
         private float targetIssuedAt;
@@ -93,20 +93,13 @@ namespace AI.States
 
                 if (visibleTerminal != null)
                 {
-                    Debug.Log(
-                        $"[Investigate Debug] Terminal bulundu: {visibleTerminal.name} | " +
-                        $"Kullanýlmýþ: {visibleTerminal.IsUsed} | " +
-                        $"Baþarýsýz listesinde: {failedTerminals.Contains(visibleTerminal)}"
-                    );
+                    
 
                     if (!visibleTerminal.IsUsed)
                     {
-                        Debug.Log(
-                            $"[Investigate Debug] Terminal yeniden hedefleniyor: " +
-                            $"{visibleTerminal.name}"
-                        );
+                        
 
-                        failedTerminals.Remove(visibleTerminal);
+                        
                         LockOnToTargetTerminal(visibleTerminal);
                         return;
                     }
@@ -284,18 +277,13 @@ namespace AI.States
                 {
                     bool destinationSet = brain.Agent.SetDestination(currentTargetNode.Position);
 
-                    Debug.Log(
-                        $"[Frontier Debug] Hedef: {currentTargetNode.Position} | " +
-                        $"NavMesh: {brain.Agent.isOnNavMesh} | " +
-                        $"SetDestination: {destinationSet} | " +
-                        $"PathStatus: {brain.Agent.pathStatus}"
-                    );
+                  
 
                     if (destinationSet)
                         return;
                 }
 
-                Debug.LogWarning($"[Frontier Debug] Hedefe rota atanamadý; düðüm Checked yapýlmadý: {currentTargetNode.Position}");
+                
                 currentTargetNode = null;
             }
 
@@ -312,54 +300,7 @@ namespace AI.States
                 return;
             }
 
-            int unknownCount = 0;
-            int unknownWithKnownNeighbor = 0;
-            int isolatedUnknownCount = 0;
-            int unknownWithAnyNeighbor = 0;
-            int unknownWithUnknownNeighbor = 0;
-
-            if (knowledgeMap != null)
-            {
-                foreach (ExplorationNode node in knowledgeMap.AllNodes)
-                {
-                    if (node.State != NodeState.Unknown)
-                        continue;
-
-                    unknownCount++;
-
-                    if (node.Neighbors.Count > 0)
-                        unknownWithAnyNeighbor++;
-
-                    bool hasKnownNeighbor = false;
-                    bool hasUnknownNeighbor = false;
-
-                    foreach (ExplorationNode neighbor in node.Neighbors)
-                    {
-                        if (neighbor.State == NodeState.Seen || neighbor.State == NodeState.Visited)
-                        {
-                            hasKnownNeighbor = true;
-                        }
-
-                        if (neighbor.State == NodeState.Unknown)
-                        {
-                            hasUnknownNeighbor = true;
-                        }
-                    }
-
-                    if (hasKnownNeighbor) unknownWithKnownNeighbor++;
-                    if (hasUnknownNeighbor) unknownWithUnknownNeighbor++;
-                    if (!hasKnownNeighbor) isolatedUnknownCount++;
-                }
-            }
-
-            Debug.LogWarning(
-                $"[Frontier Graph Diagnosis] " +
-                $"Unknown: {unknownCount} | " +
-                $"Herhangi bir komþusu olan: {unknownWithAnyNeighbor} | " +
-                $"Unknown komþusu olan: {unknownWithUnknownNeighbor} | " +
-                $"Seen/Visited komþusu olan: {unknownWithKnownNeighbor} | " +
-                $"Bilinen komþusu olmayan: {isolatedUnknownCount}"
-            );
+           
         }
 
         private bool IsPathCrossingLaser(Vector3 start, Vector3 target)
@@ -403,7 +344,7 @@ namespace AI.States
                     laserLayer,
                     QueryTriggerInteraction.Collide))
                 {
-                    Debug.Log($"[Robot AI] Rota elendi. Lazer: {hit.collider.name}, Konum: {hit.point}");
+                    
                     return true;
                 }
             }
@@ -423,14 +364,14 @@ namespace AI.States
             if (!TryNextTerminalApproach())
                 AbandonUnreachableTerminal();
 
-            Debug.Log($"<color=green>[Robot AI]: Þaltere eriþilebilir yaklaþým aranýyor: {terminal.name}</color>");
+            
         }
 
         private bool TryNextTerminalApproach()
         {
             if (targetTerminal == null || brain.Agent == null || !brain.Agent.isOnNavMesh)
             {
-                Debug.LogWarning("[Terminal Debug] Erken çýkýþ: terminal, agent veya NavMesh kontrolü baþarýsýz.");
+                
                 return false;
             }
 
@@ -456,14 +397,14 @@ namespace AI.States
 
                 if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
                 {
-                    Debug.LogWarning($"[Terminal Debug] NavMesh noktasý bulunamadý: {targetTerminal.name} | Aday: {candidate}");
+                    
                     continue;
                 }
 
                 if (!NavMesh.CalculatePath(brain.Agent.nextPosition, hit.position, NavMesh.AllAreas, candidatePath) ||
                     candidatePath.status != NavMeshPathStatus.PathComplete)
                 {
-                    Debug.LogWarning($"[Terminal Debug] Tam rota oluþturulamadý: {targetTerminal.name} | Aday: {hit.position}");
+                    
                     continue;
                 }
 
@@ -474,11 +415,11 @@ namespace AI.States
 
                 if (!brain.Agent.SetDestination(hit.position))
                 {
-                    Debug.LogWarning($"[Terminal Debug] SetDestination baþarýsýz: {targetTerminal.name} | Konum: {hit.position}");
+                    
                     continue;
                 }
 
-                Debug.Log($"[Terminal Debug] Yaklaþma rotasý verildi: {targetTerminal.name} | Hedef: {hit.position}");
+                
                 terminalPathIssuedAt = Time.time;
                 terminalLastProgressAt = Time.time;
                 terminalLastRemainingDistance = float.PositiveInfinity;
@@ -492,7 +433,6 @@ namespace AI.States
         {
             if (targetTerminal != null)
             {
-                failedTerminals.Add(targetTerminal);
                 Debug.LogWarning($"[Robot AI]: Terminal için eriþilebilir ve tamamlanabilir NavMesh rotasý bulunamadý: {targetTerminal.name}");
             }
 

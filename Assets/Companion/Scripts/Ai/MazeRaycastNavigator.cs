@@ -95,9 +95,6 @@ public class MazeRaycastNavigator : MonoBehaviour
             return;
         }
 
-        Debug.Log(
-            "[MazeRaycast] Maze giriþ noktasýna gidiliyor."
-        );
     }
 
     public void EndMazeMode()
@@ -136,9 +133,7 @@ public class MazeRaycastNavigator : MonoBehaviour
             moveDir = Vector3.zero;
         }
 
-        Debug.Log(
-            $"[MazeRaycast] Mod: {(value ? "AÇIK" : "KAPALI")}"
-        );
+        
     }
 
     private void Update()
@@ -176,9 +171,7 @@ public class MazeRaycastNavigator : MonoBehaviour
                 nextTerminalCheckTime = 0f;
                 moveDir = transform.forward;
 
-                Debug.Log(
-                    "[MazeRaycast] Giriþe ulaþýldý. Keþif baþlýyor."
-                );
+               
             }
 
             return;
@@ -199,9 +192,7 @@ public class MazeRaycastNavigator : MonoBehaviour
             nextDecisionTime = Time.time + decisionInterval;
             moveDir = ChooseDirection();
 
-            Debug.Log(
-                $"[MazeRaycast] Seçilen yön: {moveDir}"
-            );
+            
         }
 
         if (moveDir.sqrMagnitude < 0.0001f)
@@ -265,10 +256,7 @@ public class MazeRaycastNavigator : MonoBehaviour
         if (nearest == null)
             return;
 
-        Debug.Log(
-            $"[MazeRaycast] Þalter algýlandý: {nearest.name} | " +
-            $"Mesafe: {nearestDistance:F2}m"
-        );
+        
 
         // Önce Maze navigasyonunu kapat.
         // Böylece kendi hareket kontrolü Agent rotasýný ezmez.
@@ -286,11 +274,7 @@ public class MazeRaycastNavigator : MonoBehaviour
 
     private Vector3 ChooseDirection()
     {
-        int outsideBoundsCount = 0;
-        int laserBlockedCount = 0;
-        int wallBlockedCount = 0;
-        int acceptedCount = 0;
-
+       
         Vector3 origin =
             transform.position + Vector3.up * scanHeight;
 
@@ -309,7 +293,7 @@ public class MazeRaycastNavigator : MonoBehaviour
 
             if (!mazeKnowledge.IsInsideMaze(nextPosition))
             {
-                outsideBoundsCount++;
+                
                 continue;
             }
 
@@ -335,16 +319,7 @@ public class MazeRaycastNavigator : MonoBehaviour
                     laserMask
                 );
 
-                if (laserHit)
-                {
-                    Debug.Log(
-                        $"[MAZE LASER DEBUG] " +
-                        $"Collider: {hit.collider.name} | " +
-                        $"Layer: {LayerMask.LayerToName(hit.collider.gameObject.layer)} | " +
-                        $"Mesafe: {hit.distance:F2} | " +
-                        $"Hit Point: {hit.point}"
-                    );
-                }
+                
 
                 wallHit = IsInMask(
                     hit.collider.gameObject.layer,
@@ -360,23 +335,20 @@ public class MazeRaycastNavigator : MonoBehaviour
 
             if (wallHit)
             {
-                Debug.Log(
-                    $"[MAZE WALL DEBUG] Nesne: {hit.collider.name} | " +
-                    $"Konum: {hit.point} | Mesafe: {hit.distance:F2}"
-                );
+                
 
                 mazeKnowledge.ObserveWall(hit.point);
             }
 
             if (laserHit && clear < laserSafeDistance)
             {
-                laserBlockedCount++;
+                
                 continue;
             }
 
             if (wallHit && clear < wallMinDistance)
             {
-                wallBlockedCount++;
+                
                 continue;
             }
 
@@ -392,7 +364,7 @@ public class MazeRaycastNavigator : MonoBehaviour
                 mazeKnowledge.WorldToCell(nextPosition)
             ) * visitPenalty;
 
-            acceptedCount++;
+            
 
             if (score > bestScore)
             {
@@ -401,13 +373,7 @@ public class MazeRaycastNavigator : MonoBehaviour
             }
         }
 
-        Debug.Log(
-            $"[MAZE DIAGNOSTIC] " +
-            $"Bounds dýþý: {outsideBoundsCount} | " +
-            $"Lazer engeli: {laserBlockedCount} | " +
-            $"Duvar engeli: {wallBlockedCount} | " +
-            $"Kabul edilen: {acceptedCount}"
-        );
+        
 
         if (bestDir == Vector3.zero)
         {
@@ -418,10 +384,7 @@ public class MazeRaycastNavigator : MonoBehaviour
             return Vector3.zero;
         }
 
-        Debug.Log(
-            $"[MazeRaycast] Seçilen yön: {bestDir} | " +
-            $"En iyi skor: {bestScore:F2}"
-        );
+      
 
         return bestDir;
     }

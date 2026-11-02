@@ -18,18 +18,13 @@ public class LaserHazard : MonoBehaviour
         if (!robotsInside.Add(robot))
             return;
 
-        Debug.Log(
-            $"[LASER DEBUG] Laser: {name} | " +
-            $"Object: {other.name} | " +
-            $"RobotBrain found: True",
-            other.gameObject
-        );
+        
 
         // Maze kontrolü hareketi devraldıysa
         // ORB sisteminin reset mekanizmasını çalıştırma.
         if (robot.ExternalControl)
         {
-            Debug.Log("[LaserHazard] Maze kontrolü aktif. ORB reseti engellendi.");
+            
             return;
         }
 

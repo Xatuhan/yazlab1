@@ -73,9 +73,7 @@ public class LaserGroup : MonoBehaviour, IActivatable
                 }
             }
 
-            Debug.Log(
-                $"[LaserGroup] {laserBeams.Count} lazer ýþýný bulundu."
-            );
+            
         }
     }
 
@@ -110,11 +108,5 @@ public class LaserGroup : MonoBehaviour, IActivatable
             laserInteractionZone.SetActive(false);
         }
 
-        Debug.Log(
-            $"[LaserGroup] {gameObject.name}: " +
-            $"{laserBeams.Count} ýþýn, " +
-            $"{laserHazardObjects.Count} collider nesnesi ve " +
-            $"Laser Interaction Zone devre dýþý býrakýldý."
-        );
     }
 }

@@ -30,9 +30,7 @@ public class DoorTerminal : MonoBehaviour
 
         isUsed = true;
 
-        Debug.Log(
-            "<color=cyan>[Terminal]: Bilgisayar butonuna basıldı! Hedef tetikleniyor...</color>"
-        );
+       
 
         if (targetToActivate != null &&
             targetToActivate is IActivatable activatable)
@@ -65,9 +63,7 @@ public class DoorTerminal : MonoBehaviour
                 {
                     mazeNavigator.EndMazeMode();
 
-                    Debug.Log(
-                        "[Terminal] Maze tamamlandı. ORB kontrolü yeniden etkin."
-                    );
+                    
                 }
                 else
                 {

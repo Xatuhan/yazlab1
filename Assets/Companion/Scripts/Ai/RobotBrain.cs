@@ -69,9 +69,7 @@ public class RobotBrain : MonoBehaviour, IPetBrain
 
         StateMachine.ChangeState(new MoveToTargetState(this));
 
-        Debug.Log(
-            "<color=yellow>[RobotBrain] Robot başlangıca sıfırlandı.</color>"
-        );
+        
     }
 
     // Gerçek bir lazer çarpışması gerçekleştiğinde çağrılır.
@@ -84,11 +82,7 @@ public class RobotBrain : MonoBehaviour, IPetBrain
 
         LaserHitCount++;
 
-        Debug.Log(
-            $"[Laser Learning] Çarpışma: {LaserHitCount} | " +
-            $"Gözlem: {LaserObservationCount}/{observationsToLearn} | " +
-            $"Yeterli gözlem: {HasEnoughLaserObservations}"
-        );
+       
 
         ResetToStartPosition();
     }
@@ -99,11 +93,7 @@ public class RobotBrain : MonoBehaviour, IPetBrain
     {
         LaserObservationCount++;
 
-        Debug.Log(
-            $"[Laser Learning] Lazer gözlemi: " +
-            $"{(laserActive ? "AÇIK" : "KAPALI")} | " +
-            $"Toplam gözlem: {LaserObservationCount}"
-        );
+        
     }
 
     private void OnDrawGizmos()

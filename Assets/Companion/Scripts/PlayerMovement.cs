@@ -88,9 +88,5 @@ public class PlayerMovement : MonoBehaviour
         Vector3 finalVelocity = (moveDirection.normalized * moveSpeed) + playerVelocity;
         controller.Move(finalVelocity * Time.deltaTime);
     }
-    private void OnControllerColliderHit(ControllerColliderHit hit)
-    {
-        if (hit.normal.y < 0.5f) // zemin değil, yan çarpma
-            Debug.Log($"Çarpılan: {hit.collider.name}", hit.collider);
-    }
+    
 }

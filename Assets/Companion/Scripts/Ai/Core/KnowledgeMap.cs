@@ -123,38 +123,10 @@ namespace AI.Core
                 }
             }
 
-            Debug.Log($"<color=cyan>[KnowledgeMap]: Izgara yöntemiyle {AllNodes.Count} adet düğüm eksiksiz oluşturuldu.</color>");
-            int nodesWithoutNeighbors = 0;
-            int totalConnections = 0;
-
-            foreach (var node in AllNodes)
-            {
-                if (node.Neighbors.Count == 0)
-                    nodesWithoutNeighbors++;
-
-                totalConnections += node.Neighbors.Count;
-            }
-
-            Debug.Log(
-                $"[KnowledgeMap Debug] Düğüm: {AllNodes.Count} | " +
-                $"Komşusuz düğüm: {nodesWithoutNeighbors} | " +
-                $"Düğüm başına ortalama komşu: " +
-                $"{(AllNodes.Count > 0 ? (float)totalConnections / AllNodes.Count : 0f):F2}"
-            );
+            
         }
 
-        private void TryAddNodePosition(Vector3 pos, List<Vector3> list)
-        {
-            if (NavMesh.SamplePosition(pos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas))
-            {
-                foreach (var existing in list)
-                {
-                    if (Vector3.Distance(existing, hit.position) < nodeSpacing)
-                        return;
-                }
-                list.Add(hit.position);
-            }
-        }
+        
 
         /// <summary>
         /// Şalter bulunduğunda veya labirent geçildiğinde Checked cezalarını temizler.
