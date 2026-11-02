@@ -1,4 +1,5 @@
 
+using AI.States;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -74,7 +75,10 @@ public class LaserTriggerZone : MonoBehaviour
             );
             return;
         }
-
+        if (robot.StateMachine.CurrentState is PetInvestigateState)
+        {
+            return;
+        }
         if (mazeNavigator.IsActive)
         {
            
