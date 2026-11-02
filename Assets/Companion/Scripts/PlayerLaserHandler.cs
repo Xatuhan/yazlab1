@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 public class PlayerLaserHandler : MonoBehaviour
@@ -12,7 +13,7 @@ public class PlayerLaserHandler : MonoBehaviour
 
         if (other.name.Contains("Laser") || other.CompareTag("Laser"))
         {
-            Debug.Log("<color=red>Oyuncu Lazere Temas Etti! Baþlangýca Dönülüyor...</color>");
+            Debug.Log("Oyuncu lazere temas etti! Baþlangýca dönülüyor...");
             Respawn();
         }
     }
@@ -25,11 +26,10 @@ public class PlayerLaserHandler : MonoBehaviour
             return;
         }
 
-        // 1. CharacterController varsa geçici olarak kapatýyoruz (Pozisyon kilitlenmesini çözer)
         CharacterController cc = GetComponent<CharacterController>();
-        if (cc != null) cc.enabled = false;
+        if (cc != null)
+            cc.enabled = false;
 
-        // 2. Rigidbody varsa fizik hýzýný sýfýrlýyoruz
         Rigidbody rb = GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -37,11 +37,10 @@ public class PlayerLaserHandler : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
 
-        // 3. Pozisyonu deðiþtiriyoruz
         transform.position = spawnPoint.position;
         transform.rotation = spawnPoint.rotation;
 
-        // 4. CharacterController'ý tekrar açýyoruz
-        if (cc != null) cc.enabled = true;
+        if (cc != null)
+            cc.enabled = true;
     }
 }

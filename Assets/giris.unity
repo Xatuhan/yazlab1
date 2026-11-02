@@ -25402,7 +25402,6 @@ GameObject:
   - component: {fileID: 1872169116}
   - component: {fileID: 1872169115}
   - component: {fileID: 1872169114}
-  - component: {fileID: 1872169125}
   - component: {fileID: 1872169127}
   - component: {fileID: 1872169113}
   - component: {fileID: 1872169120}
@@ -25667,18 +25666,6 @@ MonoBehaviour:
   nodeSpacing: 1.25
   neighborDistance: 2.5
   showGizmos: 1
---- !u!114 &1872169125
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1872169112}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7834e369bbe0c9b43a28532adaeb3545, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SafeLaserPathPlanner
 --- !u!114 &1872169126
 MonoBehaviour:
   m_ObjectHideFlags: 0

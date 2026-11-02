@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 namespace AI
@@ -16,15 +17,10 @@ namespace AI
         {
             bool isLaser = other.gameObject.layer == LayerMask.NameToLayer("Laser");
 
-            Debug.Log(
-                $"[ROBOT LASER DEBUG] Object={other.name}, " +
-                $"Tag={other.tag}, IsLaser={isLaser}"
-            );
-
             if (!isLaser)
                 return;
 
-            Debug.LogError(
+            Debug.Log(
                 $"[ROBOT LASER HIT] {other.name}",
                 other.gameObject
             );
