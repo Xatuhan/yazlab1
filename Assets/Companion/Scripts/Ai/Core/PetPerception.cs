@@ -86,14 +86,7 @@ namespace AI.Core
 
             if (detected != lastLoggedTerminal)
             {
-                if (detected != null)
-                {
-                    Debug.Log(
-                        $"[Perception Debug] Terminal algılandı: " +
-                        $"{detected.name} | Mesafe: " +
-                        $"{Vector3.Distance(transform.position, detected.transform.position):F2} m"
-                    );
-                }
+               
 
                 lastLoggedTerminal = detected;
             }
@@ -155,10 +148,6 @@ namespace AI.Core
                 {
                     sensorPositions[sensor] = currentPosition;
 
-                    Debug.Log(
-                        $"[Laser Sensor] Algılandı: {sensor.name} | " +
-                        $"Konum: {currentPosition}"
-                    );
 
                     continue;
                 }
@@ -178,12 +167,7 @@ namespace AI.Core
 
                 if (movement >= sensorMovementThreshold)
                 {
-                    Debug.Log(
-                        $"[Laser Sensor] Hareket: {sensor.name} | " +
-                        $"Eski: {previousPosition} | " +
-                        $"Yeni: {currentPosition} | " +
-                        $"Mesafe: {movement:F2} m"
-                    );
+                    
 
                     sensorPositions[sensor] = currentPosition;
                 }
@@ -217,13 +201,7 @@ namespace AI.Core
             DetectedTerminal = ScanForTerminals();
             lastLoggedTerminal = DetectedTerminal;
 
-            if (DetectedTerminal != null)
-            {
-                Debug.Log(
-                    $"[Perception Debug] İlk taramada terminal bulundu: " +
-                    $"{DetectedTerminal.name}"
-                );
-            }
+          
         }
 
         private ExplorationNode GetNearestNode(Vector3 point)
@@ -367,11 +345,7 @@ namespace AI.Core
 
                 if (distToTerminal <= 3.0f)
                 {
-                    Debug.Log(
-                        $"[Perception Debug] Yakın terminal bulundu: " +
-                        $"{terminal.name} | Mesafe: {distToTerminal:F2} m"
-                    );
-
+                    
                     return terminal;
                 }
 
@@ -404,11 +378,7 @@ namespace AI.Core
                     }
                 }
 
-                Debug.Log(
-                    $"[Perception Debug] Görüş alanında terminal bulundu: " +
-                    $"{terminal.name} | Mesafe: {distToTerminal:F2} m"
-                );
-
+               
                 return terminal;
             }
 

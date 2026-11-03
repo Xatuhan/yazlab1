@@ -1,4 +1,5 @@
 
+using AI.States;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -74,17 +75,20 @@ public class LaserTriggerZone : MonoBehaviour
             );
             return;
         }
-
+        if (robot.StateMachine.CurrentState is PetInvestigateState)
+        {
+            return;
+        }
         if (mazeNavigator.IsActive)
         {
-            Debug.Log("[LaserTriggerZone] Maze zaten aktif.");
+           
             return;
         }
 
         hasCommandedRobot = true;
         mazeNavigator.StartMazeMode();
 
-        Debug.Log("[LaserTriggerZone] E tuşuyla Maze modu başlatıldı.");
+       
     }
 
     private void OnDrawGizmosSelected()

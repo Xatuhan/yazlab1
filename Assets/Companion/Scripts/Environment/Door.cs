@@ -6,29 +6,18 @@ public class Door : MonoBehaviour, IActivatable
 {
     public bool IsOpen { get; private set; } = false;
 
-    // IActivatable aray�z�n�n �art�:
+    // IActivatable arayüzünün şartı:
     public bool IsActivated => IsOpen;
 
-    [Header("Bile�enler & Ba�lant�lar")]
+    [Header("Bileşenler & Bağlantılar")]
     [SerializeField] private NavMeshObstacle navMeshObstacle;
     [SerializeField] private Animator doorAnimator;
 
     public static event Action<Door> OnDoorOpened;
 
-    private void Start()
-    {
-        Debug.Log($"<color=yellow>{gameObject.name} �zerindeki Door script'i aktif ve �al���yor!</color>");
-    }
-
     private void Awake()
     {
         if (navMeshObstacle == null) navMeshObstacle = GetComponent<NavMeshObstacle>();
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (IsPlayerCollider(other))
-            Debug.Log("[Door] Look at the door and press E to send the robot.");
     }
 
     private static bool IsPlayerCollider(Collider other)
@@ -43,18 +32,17 @@ public class Door : MonoBehaviour, IActivatable
         RobotBrain robot = FindAnyObjectByType<RobotBrain>();
         if (robot != null)
         {
-            Debug.Log("<color=cyan>[Oyuncu]: Robota kap� �evresini ara�t�rmas� emredildi!</color>");
             robot.StateMachine.ChangeState(new AI.States.PetInvestigateState(robot, this));
         }
         else
         {
-            Debug.LogWarning("[Kap�]: Sahnede RobotBrain bulunamad�!");
+            Debug.LogWarning("[Kapı]: Sahnede RobotBrain bulunamadı!");
         }
     }
 
     /// <summary>
-    /// IActivatable aray�z� tetikleme metodu. 
-    /// Genel terminal/�alter mekanizmas� buray� �a��r�r.
+    /// IActivatable arayüzü tetikleme metodu.
+    /// Genel terminal/şalter mekanizması burayı çağırır.
     /// </summary>
     public void Activate()
     {
@@ -66,16 +54,15 @@ public class Door : MonoBehaviour, IActivatable
         if (IsOpen) return;
 
         IsOpen = true;
-        Debug.Log($"<color=green>[Kap�]: A��l�yor!</color>");
 
-        // 1. NavMesh �zerindeki yapay zeka engelini kald�r
+        // 1. NavMesh üzerindeki yapay zeka engelini kaldır
         if (navMeshObstacle != null)
         {
             navMeshObstacle.enabled = false;
         }
 
-        // 2. Prefab hiyerar�isindeki T�M kat� (Is Trigger = false) fizik collider'lar�n� kapat
-        // transform.root sayesinde script ister panelde ister ana objede olsun t�m kat� engelleri temizler
+        // 2. Prefab hiyerarşisindeki TÜM katı (Is Trigger = false) fizik collider'larını kapat
+        // transform.root sayesinde script ister panelde ister ana objede olsun tüm katı engelleri temizler
         Collider[] allColliders = transform.root.GetComponentsInChildren<Collider>();
         foreach (Collider col in allColliders)
         {
@@ -85,7 +72,7 @@ public class Door : MonoBehaviour, IActivatable
             }
         }
 
-        // 3. G�rsel a��lma efekti / Animasyon
+        // 3. Görsel açılma efekti / Animasyon
         if (doorAnimator != null)
         {
             doorAnimator.SetTrigger("Open");
@@ -98,4 +85,3 @@ public class Door : MonoBehaviour, IActivatable
         OnDoorOpened?.Invoke(this);
     }
 }
-

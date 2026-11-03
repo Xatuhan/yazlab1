@@ -53,7 +53,7 @@ public class MazeKnowledge : MonoBehaviour
     {
         cells.Clear();
 
-        Debug.Log("[MazeKnowledge] Harita temizlendi.");
+        
     }
 
     public Vector2Int WorldToCell(Vector3 position)

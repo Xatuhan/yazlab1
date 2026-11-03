@@ -36,7 +36,7 @@ public class PlayerInteraction : MonoBehaviour
         // Belirtilen layer'lar hariç raycast fýrlat
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, ~ignoreLayers, QueryTriggerInteraction.Collide))
         {
-            Debug.Log("Iþýnýn çarptýðý obje: " + hit.collider.name);
+           
 
             Door door = hit.collider.GetComponentInParent<Door>();
             if (door == null)
