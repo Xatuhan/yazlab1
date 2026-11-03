@@ -2603,8 +2603,8 @@ MonoBehaviour:
   showDelaySeconds: 2
   unlockedTitle: "Seni tan\u0131d\u0131. Kap\u0131 a\xE7\u0131ld\u0131."
   unlockedCount: '{n} mesajda onu ikna ettin.'
-  defeatedTitle: "Kar\u0131n sald\u0131r\u0131ya ge\xE7ti. Sava\u015F\u0131 kaybettin."
-  defeatedCount: "{n} mesajda kar\u0131n\u0131 k\u0131zd\u0131rd\u0131n."
+  defeatedTitle: "Seni tan\u0131mad\u0131. Sald\u0131r\u0131ya ge\xE7ti."
+  defeatedCount: "{n} mesajda ba\u015Far\u0131s\u0131z oldun."
 --- !u!114 &1796983402761193244
 MonoBehaviour:
   m_ObjectHideFlags: 0

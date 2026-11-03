@@ -19,13 +19,13 @@ public class MazeKnowledge : MonoBehaviour
         public float lastObservedTime;
     }
 
-    [Header("Harita Ayarları")]
+    [Header("Harita AyarlarÄ±")]
     [SerializeField] private float cellSize = 0.5f;
 
-    [Header("Keşif Sınırı")]
+    [Header("KeÅŸif SÄ±nÄ±rÄ±")]
     [SerializeField] private BoxCollider mazeBounds;
 
-    [Header("Görselleştirme")]
+    [Header("GÃ¶rselleÅŸtirme")]
     [SerializeField] private bool showMapGizmos = true;
     [SerializeField] private float gizmoHeight = 0.05f;
 
@@ -34,7 +34,7 @@ public class MazeKnowledge : MonoBehaviour
 
     public int DiscoveredCellCount => cells.Count;
 
-    // Pozisyonun Maze sınırları içinde olup olmadığını kontrol eder.
+    // Pozisyonun Maze sÄ±nÄ±rlarÄ± iÃ§inde olup olmadÄ±ÄŸÄ±nÄ± kontrol eder.
     public bool IsInsideMaze(Vector3 position)
     {
         if (mazeBounds == null)
@@ -48,7 +48,7 @@ public class MazeKnowledge : MonoBehaviour
                position.z <= bounds.max.z;
     }
 
-    // Önceki keşiflerden kalan haritayı temizler.
+    // Ã–nceki keÅŸiflerden kalan haritayÄ± temizler.
     public void ClearMap()
     {
         cells.Clear();
@@ -143,7 +143,7 @@ public class MazeKnowledge : MonoBehaviour
         {
             Vector3 sample = origin + dir * d;
 
-            // Maze dışına çıkıldığında taramayı durdur.
+            // Maze dÄ±ÅŸÄ±na Ã§Ä±kÄ±ldÄ±ÄŸÄ±nda taramayÄ± durdur.
             if (!IsInsideMaze(sample))
                 break;
 

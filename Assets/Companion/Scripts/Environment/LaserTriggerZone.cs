@@ -12,14 +12,9 @@ public class LaserTriggerZone : MonoBehaviour
     [Header("Lazer Durumu")]
     [SerializeField] private bool lasersActive = true;
 
-    private bool hasCommandedRobot = false;
-
     public void SetLasersActive(bool active)
     {
         lasersActive = active;
-
-        if (lasersActive)
-            hasCommandedRobot = false;
     }
 
     private void Start()
@@ -36,7 +31,8 @@ public class LaserTriggerZone : MonoBehaviour
 
     private void Update()
     {
-        if (!lasersActive || hasCommandedRobot || player == null)
+        // çözülünce LaserGroup bu alanı kapatır
+        if (!lasersActive || player == null)
             return;
 
         float distance = Vector3.Distance(
@@ -85,7 +81,6 @@ public class LaserTriggerZone : MonoBehaviour
             return;
         }
 
-        hasCommandedRobot = true;
         mazeNavigator.StartMazeMode();
 
        

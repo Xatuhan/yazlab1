@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerLaserHandler : MonoBehaviour
 {
-    [Header("Yeniden Doðma Noktasý")]
+    [Header("Yeniden DoÄŸma NoktasÄ±")]
     [SerializeField] private Transform spawnPoint;
 
     private void OnTriggerEnter(Collider other)
@@ -22,7 +22,7 @@ public class PlayerLaserHandler : MonoBehaviour
     {
         if (spawnPoint == null)
         {
-            Debug.LogError("Spawn Point atanmadý! Lütfen Inspector'dan bir hedef Transform baðlayýn.");
+            Debug.LogError("Spawn Point atanmadÄ±! LÃ¼tfen Inspector'dan bir hedef Transform baÄŸlayÄ±n.");
             return;
         }
 

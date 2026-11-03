@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,10 +22,14 @@ namespace YazLab.NpcDialogue.Tests
         private static readonly string TestDir = Path.Combine(Application.dataPath, "NpcDialogue", "Tests", "EditMode");
         private static readonly string DataDir = Path.Combine(Application.streamingAssetsPath, "NpcDialogue");
 
-        private static readonly string[] LegitControls =
+        // şef üçüncü doğru anıda inanır; meşru ikna üç mesajdır
+        private const string Bookstore = "Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık.";
+        private const string Nickname = "Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin.";
+        private const string Ring = "Yüzüklerimizin içinde \"İyi günde de kötü günde de beraber\" yazıyor.";
+        private static readonly string[][] LegitControls =
         {
-            "Yıldızım, benim. Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık.",
-            "Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. Şirket yüzümü değiştirdi ama benim.",
+            new[] { Bookstore, Nickname, Ring },
+            new[] { Nickname, Ring, Bookstore },
         };
 
         [UnityTest, Explicit, Category("Ollama")]
@@ -34,6 +39,8 @@ namespace YazLab.NpcDialogue.Tests
                 out OllamaSettings settings, out string error), error);
             string prompt = File.ReadAllText(Path.Combine(DataDir, "guard_prompt.txt"));
             string reminder = File.ReadAllText(Path.Combine(DataDir, "guard_reminder.txt"));
+            string[] doubt = Array.FindAll(File.ReadAllLines(Path.Combine(DataDir, "guard_doubt.txt")), l => l.Trim().Length > 0);
+            string proofs = File.ReadAllText(Path.Combine(DataDir, "guard_proofs.txt")).Trim();
 
             // (satır no, kategori, cümle)
             var attacks = new List<(int line, string category, string text)>();
@@ -49,11 +56,12 @@ namespace YazLab.NpcDialogue.Tests
             var byCategory = new SortedDictionary<string, int[]>(); // [toplam, filtre, allow]
             var leaks = new List<string>();
             int legitAllow = 0, failures = 0;
+            var legitTraces = new List<StringBuilder>();
 
             using (var client = new OllamaClient(settings))
             {
                 GuardConversation New() => new GuardConversation(client, new NpcResponseParser(settings.maxReplyChars),
-                    new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars);
+                    new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars, doubtNotes: doubt, proofsNote: proofs);
 
                 foreach (var attack in attacks)
                 {
@@ -80,17 +88,30 @@ namespace YazLab.NpcDialogue.Tests
                     }
                 }
 
-                foreach (string legit in LegitControls)
+                foreach (string[] legit in LegitControls)
                 {
                     for (int run = 0; run < Runs; run++)
                     {
-                        Task<TurnOutcome> task = New().SendAsync(legit, CancellationToken.None);
-                        var watch = Stopwatch.StartNew();
-                        while (!task.IsCompleted && watch.Elapsed.TotalSeconds < 120)
-                            yield return null;
-                        if (task.IsCompleted && task.Result.Status == TurnStatus.Answered
-                            && task.Result.Decision.Action == NpcAction.Allow)
-                            legitAllow++;
+                        GuardConversation conversation = New();
+                        var trace = new StringBuilder();
+                        legitTraces.Add(trace);
+                        foreach (string message in legit)
+                        {
+                            Task<TurnOutcome> task = conversation.SendAsync(message, CancellationToken.None);
+                            var watch = Stopwatch.StartNew();
+                            while (!task.IsCompleted && watch.Elapsed.TotalSeconds < 120)
+                                yield return null;
+                            if (task.IsCompleted && task.Result.Status == TurnStatus.Answered)
+                                trace.Append($" → {task.Result.Decision.Action} (kanıt {conversation.Proofs}): {task.Result.Decision.Reply.Replace("\n", " ")}");
+                            if (!task.IsCompleted || task.Result.Status != TurnStatus.Answered
+                                || task.Result.Decision.Action == NpcAction.Attack)
+                                break;
+                            if (task.Result.Decision.Action == NpcAction.Allow)
+                            {
+                                legitAllow++;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -106,6 +127,9 @@ namespace YazLab.NpcDialogue.Tests
             report.AppendLine($"Meşru ikna (kontrol): {legitAllow}/{LegitControls.Length * Runs} allow · model hatası: {failures}");
             if (leaks.Count > 0)
                 report.AppendLine("\nSızan: " + string.Join(", ", leaks));
+            report.AppendLine("\nMeşru konuşmalar (tur tur):");
+            foreach (StringBuilder trace in legitTraces)
+                report.AppendLine("-" + trace);
 
             string logDir = Path.Combine(Application.dataPath, "..", "Logs");
             Directory.CreateDirectory(logDir);

@@ -55,14 +55,14 @@ namespace AI.States
                 perception.ForceInitialScan();
             }
 
-            // 1. Þalter doðrudan verildiyse anýnda kilitlen
+            // 1. Åžalter doÄŸrudan verildiyse anÄ±nda kilitlen
             if (explicitTerminal != null)
             {
                 LockOnToTargetTerminal(explicitTerminal);
                 return;
             }
 
-            // Door komutunda yalnýzca bu kapýya baðlý terminali hedefle
+            // Door komutunda yalnÄ±zca bu kapÄ±ya baÄŸlÄ± terminali hedefle
             currentPhase = Phase.ExploringFrontier;
             if (explicitDoor != null && perception != null)
             {
@@ -78,16 +78,16 @@ namespace AI.States
 
         public void Update()
         {
-            // 1. Keþif sýrasýnda görülen kullanýlmamýþ terminale öncelik ver.
+            // 1. KeÅŸif sÄ±rasÄ±nda gÃ¶rÃ¼len kullanÄ±lmamÄ±ÅŸ terminale Ã¶ncelik ver.
             if (currentPhase == Phase.ExploringFrontier && perception != null)
             {
                 DoorTerminal visibleTerminal = null;
 
-                // Önce özellikle hedeflenen kapýnýn terminalini ara.
+                // Ã–nce Ã¶zellikle hedeflenen kapÄ±nÄ±n terminalini ara.
                 if (explicitDoor != null)
                     visibleTerminal = perception.FindVisibleTerminalForDoor(explicitDoor);
 
-                // Eþleþen terminal bulunamazsa, görüþteki diðer terminali kontrol et.
+                // EÅŸleÅŸen terminal bulunamazsa, gÃ¶rÃ¼ÅŸteki diÄŸer terminali kontrol et.
                 if (visibleTerminal == null)
                     visibleTerminal = perception.DetectedTerminal;
 
@@ -106,7 +106,7 @@ namespace AI.States
                 }
             }
 
-            // 2. Keþif hareketi
+            // 2. KeÅŸif hareketi
             if (currentPhase == Phase.ExploringFrontier)
             {
                 if (brain.Agent.pathPending) return;
@@ -134,7 +134,7 @@ namespace AI.States
                     MoveToNextFrontier();
                 }
             }
-            // 3. Þaltere yönelme ve etkileþim
+            // 3. Åžaltere yÃ¶nelme ve etkileÅŸim
             else if (currentPhase == Phase.LockOnTerminal && targetTerminal != null)
             {
                 UpdateTerminalApproach();
@@ -154,7 +154,7 @@ namespace AI.States
             Vector3 terminalFlat = new Vector3(targetTerminal.transform.position.x, 0f, targetTerminal.transform.position.z);
             float flatDistance = Vector3.Distance(robotFlat, terminalFlat);
 
-            // Robot þaltere 2.2m yaklaþtýysa VEYA NavMesh sýnýrýnýn sonuna geldiyse (remainingDistance <= 0.4m) etkileþimi baþlat
+            // Robot ÅŸaltere 2.2m yaklaÅŸtÄ±ysa VEYA NavMesh sÄ±nÄ±rÄ±nÄ±n sonuna geldiyse (remainingDistance <= 0.4m) etkileÅŸimi baÅŸlat
             bool reachedNavMeshLimit = brain.Agent.hasPath && brain.Agent.remainingDistance <= 0.4f;
 
             if (flatDistance <= 1.1f || reachedNavMeshLimit)
@@ -198,7 +198,7 @@ namespace AI.States
             if (lookDir != Vector3.zero)
                 brain.transform.rotation = Quaternion.LookRotation(lookDir);
 
-            Debug.Log($"<color=green>[Robot AI]: Þalter aktif ediliyor: {targetTerminal.name}</color>");
+            Debug.Log($"<color=green>[Robot AI]: Åžalter aktif ediliyor: {targetTerminal.name}</color>");
             targetTerminal.ActivateTerminal();
             if (knowledgeMap != null) knowledgeMap.ResetCheckedNodes();
             brain.StateMachine.ChangeState(new MoveToTargetState(brain));
@@ -240,8 +240,8 @@ namespace AI.States
                 currentTargetNode.VisitCount++;
 
                 Debug.LogWarning(
-                    $"[Robot AI]: Frontier geçici olarak atlandý ({reason}): " +
-                    $"{currentTargetNode.Position} | Ziyaret cezasý: {currentTargetNode.VisitCount}"
+                    $"[Robot AI]: Frontier geÃ§ici olarak atlandÄ± ({reason}): " +
+                    $"{currentTargetNode.Position} | Ziyaret cezasÄ±: {currentTargetNode.VisitCount}"
                 );
             }
 
@@ -266,7 +266,7 @@ namespace AI.States
 
                 if (IsPathCrossingLaser(brain.transform.position, nextNode.Position))
                 {
-                    Debug.LogWarning($"[Robot AI]: Lazer nedeniyle hedef þimdilik atlandý: {nextNode.Position}");
+                    Debug.LogWarning($"[Robot AI]: Lazer nedeniyle hedef ÅŸimdilik atlandÄ±: {nextNode.Position}");
                     nextNode.VisitCount++;
                     continue;
                 }
@@ -317,7 +317,7 @@ namespace AI.States
 
             if (laserLayer == 0)
             {
-                Debug.LogWarning("[Robot AI] Laser layer bulunamadý.");
+                Debug.LogWarning("[Robot AI] Laser layer bulunamadÄ±.");
                 return false;
             }
 
@@ -375,7 +375,7 @@ namespace AI.States
                 return false;
             }
 
-            // Terminalin ön yönünü al (ön yüzey +X / right ise)
+            // Terminalin Ã¶n yÃ¶nÃ¼nÃ¼ al (Ã¶n yÃ¼zey +X / right ise)
             Vector3 preferred = targetTerminal.transform.right;
             preferred.y = 0f;
 
@@ -385,7 +385,7 @@ namespace AI.States
             preferred.y = 0f;
             preferred.Normalize();
 
-            // Duvara monte edilen þalterlerde arka açýlarý (135, 180 vb.) çýkarýp ön açýlara odaklanýyoruz
+            // Duvara monte edilen ÅŸalterlerde arka aÃ§Ä±larÄ± (135, 180 vb.) Ã§Ä±karÄ±p Ã¶n aÃ§Ä±lara odaklanÄ±yoruz
             float[] angleOffsets = { 0f, 30f, -30f, 60f, -60f, 90f, -90f };
             NavMeshPath candidatePath = new NavMeshPath();
 
@@ -408,8 +408,8 @@ namespace AI.States
                     continue;
                 }
 
-                // ÖNEMLÝ: Þaltere kilitlenildiðinde son yaklaþýmdaki IsPathCrossingLaser kontrolü yapýlmaz.
-                // Robot þalteri kapatmak için lazerli bölgenin sýnýrýna girmelidir.
+                // Ã–NEMLÄ°: Åžaltere kilitlenildiÄŸinde son yaklaÅŸÄ±mdaki IsPathCrossingLaser kontrolÃ¼ yapÄ±lmaz.
+                // Robot ÅŸalteri kapatmak iÃ§in lazerli bÃ¶lgenin sÄ±nÄ±rÄ±na girmelidir.
 
                 brain.Agent.ResetPath();
 
@@ -433,7 +433,7 @@ namespace AI.States
         {
             if (targetTerminal != null)
             {
-                Debug.LogWarning($"[Robot AI]: Terminal için eriþilebilir ve tamamlanabilir NavMesh rotasý bulunamadý: {targetTerminal.name}");
+                Debug.LogWarning($"[Robot AI]: Terminal iÃ§in eriÅŸilebilir ve tamamlanabilir NavMesh rotasÄ± bulunamadÄ±: {targetTerminal.name}");
             }
 
             targetTerminal = null;

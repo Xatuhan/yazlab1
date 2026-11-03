@@ -3,9 +3,9 @@ using UnityEngine.InputSystem;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    [Header("Etkileşim Ayarları")]
-    public float interactDistance = 5.0f; // Kamera arkada olduğu için mesafeyi 5m yaptık
-    public LayerMask ignoreLayers;        // Karakterin kendisine çarpmaması için Player Layer'ı seçeceğiz
+    [Header("EtkileÅŸim AyarlarÄ±")]
+    public float interactDistance = 5.0f; // Kamera arkada olduÄŸu iÃ§in mesafeyi 5m yaptÄ±k
+    public LayerMask ignoreLayers;        // Karakterin kendisine Ã§arpmamasÄ± iÃ§in Player Layer'Ä± seÃ§eceÄŸiz
 
     private Camera mainCamera;
 
@@ -26,14 +26,14 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (mainCamera == null) mainCamera = Camera.main;
 
-        // Ekranın tam ortasından (bakış yönünden) ışın fırlat
+        // EkranÄ±n tam ortasÄ±ndan (bakÄ±ÅŸ yÃ¶nÃ¼nden) Ä±ÅŸÄ±n fÄ±rlat
         if (mainCamera == null) return;
 
         Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.green, 2.0f);
 
-        // Belirtilen layer'lar hariç raycast fırlat
+        // Belirtilen layer'lar hariÃ§ raycast fÄ±rlat
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, ~ignoreLayers, QueryTriggerInteraction.Collide))
         {
            

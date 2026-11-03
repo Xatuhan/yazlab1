@@ -87,11 +87,14 @@ namespace YazLab.NpcDialogue.Tests
             string prompt = File.ReadAllText(Path.Combine(DataDir, "guard_prompt.txt"));
             string reminder = File.ReadAllText(Path.Combine(DataDir, "guard_reminder.txt"));
             string patience = File.ReadAllText(Path.Combine(DataDir, "guard_patience.txt"));
+            string[] doubt = System.Array.FindAll(File.ReadAllLines(Path.Combine(DataDir, "guard_doubt.txt")), l => l.Trim().Length > 0);
+            string proofs = File.ReadAllText(Path.Combine(DataDir, "guard_proofs.txt")).Trim();
 
             var report = new StringBuilder();
-            report.AppendLine("| Senaryo | Beklenen | Tekrar | Oyuncu (son) | Karar | Tur | Söz |");
+            report.AppendLine("| Senaryo | Beklenen | Tekrar | Oyuncu (son) | Karar | Tur tur karar/kanıt | Söz |");
             report.AppendLine("|---|---|---|---|---|---|---|");
             var summary = new StringBuilder();
+            var mismatches = new StringBuilder();
             int failures = 0;
 
             using (var client = new OllamaClient(settings))
@@ -103,8 +106,9 @@ namespace YazLab.NpcDialogue.Tests
                     {
                         var conversation = new GuardConversation(client, new NpcResponseParser(settings.maxReplyChars),
                             new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars,
-                            settings.patienceTurns, patience);
+                            settings.patienceTurns, patience, doubt, proofs);
                         string action = "-", reply = "-", said = "-";
+                        var trace = new StringBuilder(); // tur tur karar/kanıt sayısı
 
                         foreach (Step step in scenario.Steps)
                         {
@@ -141,13 +145,17 @@ namespace YazLab.NpcDialogue.Tests
                             }
                             action = outcome.Decision.Action.ToString().ToLowerInvariant();
                             reply = outcome.Decision.Reply;
+                            trace.Append($"{action}/{conversation.Proofs} ");
+                            // kapı kapalıyken "kapıyı açıyorum" demesi oyuncuyu yanıltır
+                            if (outcome.Decision.Action == NpcAction.Deny && (reply.Contains("açıyorum") || reply.Contains("açacağım")))
+                                mismatches.AppendLine($"- {scenario.Name} #{run + 1}: \"{Escape(text)}\" → {Escape(reply)}");
                             if (outcome.Decision.Action != NpcAction.Deny)
                                 break; // oyun bitti
                         }
 
                         bool hit = action == scenario.Expected || (scenario.Expected == "deny" && action == "filtre");
                         if (hit) hits++;
-                        report.AppendLine($"| {scenario.Name} | {scenario.Expected} | {run + 1} | {Escape(said)} | {action}{(hit ? "" : " ✗")} | {conversation.AnsweredTurns} | {Escape(reply)} |");
+                        report.AppendLine($"| {scenario.Name} | {scenario.Expected} | {run + 1} | {Escape(said)} | {action}{(hit ? "" : " ✗")} | {trace.ToString().Trim()} | {Escape(reply)} |");
                     }
                     summary.AppendLine($"{scenario.Name}: {hits}/{Runs} beklenen ({scenario.Expected})");
                 }
@@ -156,7 +164,8 @@ namespace YazLab.NpcDialogue.Tests
             string logDir = Path.Combine(Application.dataPath, "..", "Logs");
             Directory.CreateDirectory(logDir);
             File.WriteAllText(Path.Combine(logDir, "npc_scenarios.md"),
-                "# NPC senaryo testi\n\n" + summary.ToString().Replace("\n", "  \n") + "\n" + report);
+                "# NPC senaryo testi\n\n" + summary.ToString().Replace("\n", "  \n") + "\n" + report
+                + "\n## Kapı kapalıyken \"kapıyı açıyorum\"\n\n" + (mismatches.Length == 0 ? "yok\n" : mismatches.ToString()));
             UnityEngine.Debug.Log("NPC senaryo özeti:\n" + summary);
 
             Assert.AreEqual(0, failures, "model cevabı alınamayan tur var (Logs/npc_scenarios.md)");

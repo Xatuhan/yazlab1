@@ -13,7 +13,7 @@ public class MainMenuController : MonoBehaviour
 
     public void QuitGame()
     {
-        Debug.Log("Oyundan çýkýlýyor...");
+        Debug.Log("Oyundan Ã§Ä±kÄ±lÄ±yor...");
         Application.Quit();
     }
 }

@@ -27,6 +27,52 @@ namespace YazLab.NpcDialogue.Tests
         }
 
         [Test]
+        public void Allow_BeforeLastProof_IsDeny_AndAsksAgainWithNote()
+        {
+            var conversation = new GuardConversation(_fake, new NpcResponseParser(400), _history, 200,
+                doubtNotes: new[] { "NOT1", "NOT2" });
+            _fake.Next = LlmResult.Success("{\"action\":\"allow\",\"reply\":\"Kapıyı açıyorum.\"}");
+
+            for (int proof = 1; proof <= 2; proof++)
+            {
+                TurnOutcome outcome = conversation.SendAsync("anı " + proof, CancellationToken.None).Result;
+                Assert.AreEqual(NpcAction.Deny, outcome.Decision.Action);
+                Assert.AreEqual(proof, conversation.Proofs);
+                Assert.AreEqual("NOT" + proof, _fake.LastMessages[_fake.LastMessages.Count - 1].content);
+            }
+
+            TurnOutcome last = conversation.SendAsync("anı 3", CancellationToken.None).Result;
+            Assert.AreEqual(NpcAction.Allow, last.Decision.Action);
+            Assert.AreEqual(7, _fake.Calls); // kanıt turu: soru + en çok 2 yeniden soru; son tur tek
+        }
+
+        [Test]
+        public void ProofsNote_UsesLineForProofCount()
+        {
+            var conversation = new GuardConversation(_fake, new NpcResponseParser(400), _history, 200,
+                doubtNotes: new[] { "NOT1", "NOT2" }, proofsNote: "BIR {n}\nIKI {n}");
+            _fake.Next = LlmResult.Success("{\"action\":\"allow\",\"reply\":\"Bunu yalnızca o bilebilirdi.\"}");
+
+            conversation.SendAsync("anı 1", CancellationToken.None).Wait();
+            conversation.SendAsync("anı 2", CancellationToken.None).Wait();
+            conversation.SendAsync("anı 3", CancellationToken.None).Wait();
+
+            Assert.AreEqual("IKI 2", _fake.LastMessages[_fake.LastMessages.Count - 1].content);
+        }
+
+        [Test]
+        public void Deny_DoesNotCountAsProof()
+        {
+            var conversation = new GuardConversation(_fake, new NpcResponseParser(400), _history, 200,
+                doubtNotes: new[] { "NOT1" });
+
+            conversation.SendAsync("merhaba", CancellationToken.None).Wait();
+
+            Assert.AreEqual(0, conversation.Proofs);
+            Assert.AreEqual(1, _fake.Calls);
+        }
+
+        [Test]
         public void ValidAnswer_IsAnswered_AndAddedToHistory()
         {
             _fake.Next = LlmResult.Success("{\"action\":\"allow\",\"reply\":\"Geç.\"}");

@@ -6,7 +6,7 @@ using UnityEngine.AI;
 [RequireComponent(typeof(MazeKnowledge))]
 public class MazeRaycastNavigator : MonoBehaviour
 {
-    [Header("Şalter Algılama")]
+    [Header("Åalter AlgÄ±lama")]
     [SerializeField] private float terminalDetectionDistance = 1.5f;
     [SerializeField] private float terminalCheckInterval = 0.2f;
 
@@ -16,7 +16,7 @@ public class MazeRaycastNavigator : MonoBehaviour
     [SerializeField] private LayerMask wallMask;
     [SerializeField] private LayerMask laserMask;
 
-    [Header("Maze Giriş Ayarları")]
+    [Header("Maze GiriÅŸ AyarlarÄ±")]
     [SerializeField] private Transform mazeEntryPoint;
     [SerializeField] private float entryStopDistance = 0.3f;
 
@@ -29,7 +29,7 @@ public class MazeRaycastNavigator : MonoBehaviour
     [SerializeField] private float angleStep = 30f;
     [SerializeField] private float decisionInterval = 0.2f;
 
-    [Header("Güvenlik / Puanlama")]
+    [Header("GÃ¼venlik / Puanlama")]
     [SerializeField] private float laserSafeDistance = 1.5f;
     [SerializeField] private float wallMinDistance = 0.6f;
     [SerializeField] private float forwardBonus = 1.0f;
@@ -62,7 +62,7 @@ public class MazeRaycastNavigator : MonoBehaviour
         if (mazeEntryPoint == null)
         {
             Debug.LogError(
-                "[MazeRaycast] MazeEntryPoint atanmamış!"
+                "[MazeRaycast] MazeEntryPoint atanmamÄ±ÅŸ!"
             );
             return;
         }
@@ -70,7 +70,7 @@ public class MazeRaycastNavigator : MonoBehaviour
         if (brain.Agent == null || !brain.Agent.isOnNavMesh)
         {
             Debug.LogError(
-                "[MazeRaycast] Robot NavMesh üzerinde değil!"
+                "[MazeRaycast] Robot NavMesh Ã¼zerinde deÄŸil!"
             );
             return;
         }
@@ -87,7 +87,7 @@ public class MazeRaycastNavigator : MonoBehaviour
         if (!brain.Agent.SetDestination(mazeEntryPoint.position))
         {
             Debug.LogError(
-                "[MazeRaycast] Giriş noktasına rota oluşturulamadı!"
+                "[MazeRaycast] GiriÅŸ noktasÄ±na rota oluÅŸturulamadÄ±!"
             );
 
             movingToEntry = false;
@@ -143,7 +143,7 @@ public class MazeRaycastNavigator : MonoBehaviour
             !brain.Agent.isOnNavMesh)
             return;
 
-        // AŞAMA 1: Maze giriş noktasına git.
+        // AÅAMA 1: Maze giriÅŸ noktasÄ±na git.
         if (movingToEntry)
         {
             if (brain.Agent.pathPending)
@@ -153,7 +153,7 @@ public class MazeRaycastNavigator : MonoBehaviour
                 brain.Agent.pathStatus != NavMeshPathStatus.PathComplete)
             {
                 Debug.LogWarning(
-                    "[MazeRaycast] MazeEntryPoint'e tam rota bulunamadı!"
+                    "[MazeRaycast] MazeEntryPoint'e tam rota bulunamadÄ±!"
                 );
 
                 movingToEntry = false;
@@ -177,14 +177,14 @@ public class MazeRaycastNavigator : MonoBehaviour
             return;
         }
 
-        // AŞAMA 2: Yakındaki şalterleri kontrol et.
+        // AÅAMA 2: YakÄ±ndaki ÅŸalterleri kontrol et.
         FindNearbyTerminal();
 
-        // Şalter algılandıysa kontrol başka state'e devredilmiştir.
+        // Åalter algÄ±landÄ±ysa kontrol baÅŸka state'e devredilmiÅŸtir.
         if (!IsActive)
             return;
 
-        // AŞAMA 3: Mevcut raycast keşif sistemi.
+        // AÅAMA 3: Mevcut raycast keÅŸif sistemi.
         RegisterVisit();
 
         if (Time.time >= nextDecisionTime)
@@ -258,11 +258,11 @@ public class MazeRaycastNavigator : MonoBehaviour
 
         
 
-        // Önce Maze navigasyonunu kapat.
-        // Böylece kendi hareket kontrolü Agent rotasını ezmez.
+        // Ã–nce Maze navigasyonunu kapat.
+        // BÃ¶ylece kendi hareket kontrolÃ¼ Agent rotasÄ±nÄ± ezmez.
         SetActive(false);
 
-        // Mevcut şalter yaklaşma ve etkileşim sistemine devret.
+        // Mevcut ÅŸalter yaklaÅŸma ve etkileÅŸim sistemine devret.
         brain.StateMachine.ChangeState(
             new AI.States.PetInvestigateState(brain, nearest)
         );
@@ -378,7 +378,7 @@ public class MazeRaycastNavigator : MonoBehaviour
         if (bestDir == Vector3.zero)
         {
             Debug.LogWarning(
-                "[MazeRaycast] Maze sınırları içinde güvenli yön bulunamadı!"
+                "[MazeRaycast] Maze sÄ±nÄ±rlarÄ± iÃ§inde gÃ¼venli yÃ¶n bulunamadÄ±!"
             );
 
             return Vector3.zero;

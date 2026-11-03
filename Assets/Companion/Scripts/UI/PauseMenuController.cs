@@ -55,6 +55,6 @@ public class PauseMenuController : MonoBehaviour
     {
         Time.timeScale = 1f;
         Application.Quit();
-        Debug.Log("Oyundan çýkýlýyor...");
+        Debug.Log("Oyundan Ã§Ä±kÄ±lÄ±yor...");
     }
 }

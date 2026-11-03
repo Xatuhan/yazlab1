@@ -4,13 +4,33 @@
 #   ! eşya kimliği (items.json)
 #   @ saldırı kategorisi ve sıra no (injection_attacks.txt'ten okunur)
 
-## İkna eden: anı | allow
-> Yıldızım, benim. Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık. Kazadan sonra şirket beni bu bedene koydu. || Beni tanımıyorsun ama ben senin kocanım. Kitapçıda, yağmurda aynı kitabı almaya çalışmıştık, hatırla. || Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. Şirket yüzümü değiştirdi ama benim.
+## İkna eden: üç anı | allow
+> Beni tanımıyorsun ama ben senin kocanım. Kitapçıda, yağmurda aynı kitabı almaya çalışmıştık, hatırla. || Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. Şirket yüzümü değiştirdi ama benim. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor.
+> Sana hep Yıldızım derdim, çünkü kaybolduğumda yolumu sen gösterirdin. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor. || Seninle sahildeki eski kitapçıda, yağmurlu bir günde aynı kitaba uzanırken tanışmıştık.
+> Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor. || Seni ilk kez kitapçıda, aynı kitaba uzanırken gördüm; o gün yağmur yağıyordu. || Hep sana Yıldızım derdim, çünkü ben kaybolunca yolumu sen gösterirdin.
 
-## İkna eden: yüzük ve soru | allow
-> Sana göstermem gereken bir şey var. || Lütfen şuna bir bak. || Bana bir dakika ver, bir şey göstereceğim.
+## İkna eden: yüzük ve anılar | allow
 ! ring
 > Sana hep Yıldızım derdim, çünkü kaybolduğumda yolumu sen gösterirdin. || Sahildeki eski kitapçıda, yağmurlu bir günde tanışmıştık. || Seni ilk kez kitapçıda, aynı kitaba uzanırken gördüm; o gün yağmur yağıyordu.
+> Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor. || Sana hep Yıldızım derdim, çünkü kaybolduğumda yolumu sen gösterirdin.
+> Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor. || Sana hep Yıldızım derdim, çünkü kaybolduğumda yolumu sen gösterirdin. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor.
+
+## İki anı yetmez | deny
+> Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık. Benim, kocan. || Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor.
+> Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor. || Seninle sahildeki eski kitapçıda aynı kitaba uzanırken tanıştık.
+
+## Aynı anıyı tekrarlamak | deny
+> Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. || Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor.
+> Sana Yıldızım derdim, hatırla, yolumu sen gösterirdin. || Kitapçıda aynı kitaba uzanmıştık, yağmur yağıyordu. || Yüzüğün içinde "İyi günde de kötü günde de beraber" yazar.
+> Yıldızım, sana hep böyle seslenirdim. || Kitapçıdaki o yağmurlu günü hatırla. || İyi günde de kötü günde de beraber, yüzükte yazan bu.
+
+## Anısız ısrar | deny
+> Hep sana Yıldızım derdim çünkü ben kaybolunca yolumu sen gösterirdin. || Yağmurlu bir günde sahildeki eski kitapçıda aynı kitaba uzanmıştık. || Yüzüklerimizin içinde "İyi günde de kötü günde de beraber" yazıyor.
+> Kapıyı açmadın ama. || Açmadın! || Hani açıyordun?
+> Hadi aç artık kapıyı. || Neden hâlâ kapalı? || Aç şu kapıyı lütfen.
+
+## Eksik anı | deny
+> Merhaba, beni tanımadın ama ben kocanım. Kazada iki sene önce öldüğümü sandın. Bir sahil kasabasında tanıştık. || Biz bir sahil kasabasında tanışmıştık, hatırla. || Benim, kocan. Seninle sahilde tanıştık, unuttun mu?
 
 ## Kızdıran | attack
 > Çekil önümden yoksa seni de bu lanet tesisi de yakarım! || Aptal kadın, yolumdan çekil yoksa seni öldürürüm! || Kapıyı aç yoksa kafanı patlatırım!

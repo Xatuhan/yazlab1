@@ -15,9 +15,14 @@ namespace YazLab.NpcDialogue
         private readonly int _patienceTurns;
         private readonly string _patienceText;
         private readonly HashSet<string> _shownItems = new HashSet<string>();
+        private readonly string[] _doubtNotes;
+        private readonly string _proofsNote;
 
+        // doubtNotes[i]: (i+1). kanıttan sonra şefe verilen durum notu; kapı (notlar + 1). kanıtta açılır.
+        // proofsNote: satır başına bir aşama; "{n}" kanıt sayısıdır
         public GuardConversation(ILlmClient client, IResponseParser parser, ConversationHistory history, int maxInputChars,
-                                 int patienceTurns = int.MaxValue, string patienceText = null)
+                                 int patienceTurns = int.MaxValue, string patienceText = null,
+                                 string[] doubtNotes = null, string proofsNote = null)
         {
             _client = client;
             _parser = parser;
@@ -25,7 +30,11 @@ namespace YazLab.NpcDialogue
             _maxInputChars = maxInputChars;
             _patienceTurns = patienceTurns;
             _patienceText = patienceText;
+            _doubtNotes = doubtNotes ?? Array.Empty<string>();
+            _proofsNote = proofsNote;
         }
+
+        public int Proofs { get; private set; }
 
         public bool IsBusy { get; private set; }
 
@@ -63,15 +72,28 @@ namespace YazLab.NpcDialogue
             IsBusy = true;
             try
             {
-                LlmResult result = await _client.SendAsync(
-                    _history.BuildMessages(content, lastChance ? _patienceText : null), ct);
-                if (!result.Ok)
-                    return TurnOutcome.Failed(result.Error);
-                if (!_parser.TryParse(result.Content, out NpcDecision decision))
-                    return TurnOutcome.Failed(LlmError.BadResponse);
+                (NpcDecision decision, LlmError error) = await AskAsync(content, Join(ProofsNote(), lastChance ? _patienceText : null), ct);
+                if (error != LlmError.None)
+                    return TurnOutcome.Failed(error);
+
+                // şef kolay inanmaz: son kanıta kadar "allow" bir kanıt sayılır, cevabı durum notuyla yeniden kurulur
+                bool proofThisTurn = decision.Action == NpcAction.Allow && Proofs < _doubtNotes.Length;
+                if (proofThisTurn)
+                {
+                    // cevap "kapıyı açıyorum" demesin diye bir kez daha sorulabilir
+                    for (int attempt = 0; attempt < 2 && decision.Action == NpcAction.Allow; attempt++)
+                    {
+                        (decision, error) = await AskAsync(content, _doubtNotes[Proofs], ct);
+                        if (error != LlmError.None)
+                            return TurnOutcome.Failed(error);
+                    }
+                    Proofs++;
+                    if (decision.Action == NpcAction.Allow)
+                        decision = new NpcDecision(NpcAction.Deny, decision.Reply);
+                }
 
                 // sabır bitti, oyun sonsuza kadar sürmesin
-                if (lastChance && decision.Action == NpcAction.Deny)
+                if (lastChance && !proofThisTurn && decision.Action == NpcAction.Deny)
                     decision = new NpcDecision(NpcAction.Attack, decision.Reply);
 
                 _history.AddTurn(content, decision);
@@ -85,6 +107,28 @@ namespace YazLab.NpcDialogue
                 IsBusy = false;
             }
         }
+
+        private async Task<(NpcDecision, LlmError)> AskAsync(string content, string note, CancellationToken ct)
+        {
+            LlmResult result = await _client.SendAsync(_history.BuildMessages(content, note), ct);
+            if (!result.Ok)
+                return (default, result.Error);
+            if (!_parser.TryParse(result.Content, out NpcDecision decision))
+                return (default, LlmError.BadResponse);
+            return (decision, LlmError.None);
+        }
+
+        // satır n: n kanıttan sonraki not; oyuncu metni sistem kanalına girmez, yalnızca sayı
+        private string ProofsNote()
+        {
+            if (Proofs == 0 || _proofsNote == null)
+                return null;
+            string[] lines = _proofsNote.Split('\n');
+            return lines[Math.Min(Proofs, lines.Length) - 1].Trim().Replace("{n}", Proofs.ToString());
+        }
+
+        private static string Join(string a, string b) =>
+            a == null ? b : b == null ? a : a + "\n" + b;
 
         // satır sonuyla sahte blok kurulamasın
         private static string Clean(string text)

@@ -10,15 +10,15 @@ public class AutoURPMaterialCreator : Editor
         Object[] selectedObjects = Selection.objects;
         if (selectedObjects.Length == 0) return;
 
-        // Varsayýlan URP Lit Shader'ý al
+        // VarsayÄ±lan URP Lit Shader'Ä± al
         Shader urpShader = Shader.Find("Universal Render Pipeline/Lit");
         if (urpShader == null)
         {
-            Debug.LogError("URP Lit Shader bulunamadý!");
+            Debug.LogError("URP Lit Shader bulunamadÄ±!");
             return;
         }
 
-        // Ýlk seçili dosyanýn yolundan materyal adý belirle
+        // Ä°lk seÃ§ili dosyanÄ±n yolundan materyal adÄ± belirle
         string firstPath = AssetDatabase.GetAssetPath(selectedObjects[0]);
         string directory = Path.GetDirectoryName(firstPath);
         string matName = "M_" + Path.GetFileNameWithoutExtension(firstPath).Split('_')[0];
@@ -32,7 +32,7 @@ public class AutoURPMaterialCreator : Editor
             {
                 string name = texture.name.ToLower();
 
-                // Ýsim sonundaki harflere göre otomatik eþleþtirme
+                // Ä°sim sonundaki harflere gÃ¶re otomatik eÅŸleÅŸtirme
                 if (name.Contains("_b") || name.Contains("albedo") || name.Contains("diffuse") || name.Contains("basecolor"))
                 {
                     mat.SetTexture("_BaseMap", texture);
@@ -40,7 +40,7 @@ public class AutoURPMaterialCreator : Editor
                 else if (name.Contains("_n") || name.Contains("normal") || name.Contains("nrm"))
                 {
                     mat.SetTexture("_BumpMap", texture);
-                    // Normal map import ayarýný düzelt
+                    // Normal map import ayarÄ±nÄ± dÃ¼zelt
                     TextureImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(texture)) as TextureImporter;
                     if (importer != null && importer.textureType != TextureImporterType.NormalMap)
                     {
@@ -67,6 +67,6 @@ public class AutoURPMaterialCreator : Editor
 
         AssetDatabase.CreateAsset(mat, savePath);
         AssetDatabase.SaveAssets();
-        Debug.Log($"Otomatik URP Materyali Oluþturuldu: {savePath}");
+        Debug.Log($"Otomatik URP Materyali OluÅŸturuldu: {savePath}");
     }
 }

@@ -51,6 +51,11 @@ public class RobotBrain : MonoBehaviour, IPetBrain
 
     public void ResetToStartPosition()
     {
+        MazeRaycastNavigator maze = GetComponent<MazeRaycastNavigator>();
+        bool wasInMaze = maze != null && maze.IsActive;
+        if (wasInMaze)
+            maze.EndMazeMode();
+
         if (Agent != null && Agent.isOnNavMesh)
         {
             Agent.isStopped = true;
@@ -67,9 +72,13 @@ public class RobotBrain : MonoBehaviour, IPetBrain
         if (Agent != null && Agent.isOnNavMesh)
             Agent.isStopped = false;
 
-        StateMachine.ChangeState(new MoveToTargetState(this));
+        if (wasInMaze)
+        {
+            maze.StartMazeMode(); // labirentte yanan robot kendisi yeniden dener
+            return;
+        }
 
-        
+        StateMachine.ChangeState(new MoveToTargetState(this));
     }
 
     // Gerçek bir lazer çarpışması gerçekleştiğinde çağrılır.

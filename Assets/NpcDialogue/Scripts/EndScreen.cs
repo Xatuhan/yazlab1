@@ -17,8 +17,8 @@ namespace YazLab.NpcDialogue
 
         [SerializeField] private string unlockedTitle = "Seni tanıdı. Kapı açıldı.";
         [SerializeField] private string unlockedCount = "{n} mesajda onu ikna ettin.";
-        [SerializeField] private string defeatedTitle = "Karın saldırıya geçti. Savaşı kaybettin.";
-        [SerializeField] private string defeatedCount = "{n} mesajda karını kızdırdın.";
+        [SerializeField] private string defeatedTitle = "Seni tanımadı. Saldırıya geçti.";
+        [SerializeField] private string defeatedCount = "{n} mesajda başarısız oldun.";
 
         private void Awake()
         {

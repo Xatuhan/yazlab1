@@ -4,27 +4,27 @@ using UnityEngine;
 
 public class LaserGroup : MonoBehaviour, IActivatable
 {
-    [Header("Lazer Işını Nesneleri (Manuel)")]
-    [Tooltip("Kapatılacak lazer ışınları. Emitter modellerini eklemeyin.")]
+    [Header("Lazer IÅŸÄ±nÄ± Nesneleri (Manuel)")]
+    [Tooltip("KapatÄ±lacak lazer Ä±ÅŸÄ±nlarÄ±. Emitter modellerini eklemeyin.")]
     [SerializeField]
     private List<GameObject> laserBeams =
         new List<GameObject>();
 
-    [Header("Otomatik Bulma Ayarları")]
-    [Tooltip("Atanırsa yalnızca bu nesnenin altındaki eşleşen nesneler taranır.")]
+    [Header("Otomatik Bulma AyarlarÄ±")]
+    [Tooltip("AtanÄ±rsa yalnÄ±zca bu nesnenin altÄ±ndaki eÅŸleÅŸen nesneler taranÄ±r.")]
     [SerializeField] private Transform laserParentGroup;
 
-    [Tooltip("Otomatik bulmada aranacak nesne adı.")]
+    [Tooltip("Otomatik bulmada aranacak nesne adÄ±.")]
     [SerializeField] private string beamNameFilter = "Light";
 
-    [Header("Oyuncuya Hasar Veren Lazer Collider'ları")]
-    [Tooltip("Lazerler kapanınca devre dışı bırakılacak ayrı collider nesneleri.")]
+    [Header("Oyuncuya Hasar Veren Lazer Collider'larÄ±")]
+    [Tooltip("Lazerler kapanÄ±nca devre dÄ±ÅŸÄ± bÄ±rakÄ±lacak ayrÄ± collider nesneleri.")]
     [SerializeField]
     private List<GameObject> laserHazardObjects =
         new List<GameObject>();
 
-    [Header("Lazer Etkileşim Alanı")]
-    [Tooltip("Lazerler kapanınca devre dışı bırakılacak Laser_Interaction_Zone.")]
+    [Header("Lazer EtkileÅŸim AlanÄ±")]
+    [Tooltip("Lazerler kapanÄ±nca devre dÄ±ÅŸÄ± bÄ±rakÄ±lacak Laser_Interaction_Zone.")]
     [SerializeField] private GameObject laserInteractionZone;
 
     public bool IsActivated { get; private set; } = false;
@@ -84,7 +84,7 @@ public class LaserGroup : MonoBehaviour, IActivatable
 
         IsActivated = true;
 
-        // 1. Lazer ışınlarını kapat.
+        // 1. Lazer Ä±ÅŸÄ±nlarÄ±nÄ± kapat.
         foreach (GameObject beam in laserBeams)
         {
             if (beam != null)
@@ -93,7 +93,7 @@ public class LaserGroup : MonoBehaviour, IActivatable
             }
         }
 
-        // 2. Oyuncuyu başlangıca döndüren ayrı collider nesnelerini kapat.
+        // 2. Oyuncuyu baÅŸlangÄ±ca dÃ¶ndÃ¼ren ayrÄ± collider nesnelerini kapat.
         foreach (GameObject hazardObject in laserHazardObjects)
         {
             if (hazardObject != null)
@@ -102,7 +102,7 @@ public class LaserGroup : MonoBehaviour, IActivatable
             }
         }
 
-        // 3. Lazer etkileşim alanını kapat.
+        // 3. Lazer etkileÅŸim alanÄ±nÄ± kapat.
         if (laserInteractionZone != null)
         {
             laserInteractionZone.SetActive(false);

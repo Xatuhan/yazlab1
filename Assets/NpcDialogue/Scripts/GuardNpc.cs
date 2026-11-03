@@ -45,10 +45,12 @@ namespace YazLab.NpcDialogue
                 string prompt = File.ReadAllText(Path.Combine(dir, "guard_prompt.txt"));
                 string reminder = File.ReadAllText(Path.Combine(dir, "guard_reminder.txt"));
                 string patience = File.ReadAllText(Path.Combine(dir, "guard_patience.txt"));
+                string[] doubt = File.ReadAllLines(Path.Combine(dir, "guard_doubt.txt"));
+                string proofs = File.ReadAllText(Path.Combine(dir, "guard_proofs.txt")).Trim();
                 _client = new OllamaClient(settings);
                 _conversation = new GuardConversation(_client, new NpcResponseParser(settings.maxReplyChars),
                     new ConversationHistory(prompt, reminder, settings.historyTurns), settings.maxInputChars,
-                    settings.patienceTurns, patience);
+                    settings.patienceTurns, patience, Array.FindAll(doubt, l => l.Trim().Length > 0), proofs);
                 view.SetMaxInput(settings.maxInputChars);
                 LoadItems(Path.Combine(dir, "items.json"));
             }

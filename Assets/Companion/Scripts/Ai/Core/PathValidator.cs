@@ -21,7 +21,7 @@ namespace AI.Core
                 knowledgeMap.AllNodes.Count == 0)
             {
                 Debug.LogWarning(
-                    "[PathValidator] KnowledgeMap veya düğümler bulunamadı."
+                    "[PathValidator] KnowledgeMap veya dÃ¼ÄŸÃ¼mler bulunamadÄ±."
                 );
                 return false;
             }
@@ -35,7 +35,7 @@ namespace AI.Core
                     path))
             {
                 Debug.LogWarning(
-                    $"[PathValidator] Rota hesaplanamadı: {target}"
+                    $"[PathValidator] Rota hesaplanamadÄ±: {target}"
                 );
                 return false;
             }
@@ -43,24 +43,24 @@ namespace AI.Core
             if (path.status != NavMeshPathStatus.PathComplete)
             {
                 Debug.LogWarning(
-                    $"[PathValidator] Rota tamamlanmadı: {target} | " +
+                    $"[PathValidator] Rota tamamlanmadÄ±: {target} | " +
                     $"Durum: {path.status}"
                 );
                 return false;
             }
 
-            // Hedef düğüm bilinmiyorsa hedefi geçerli sayma.
+            // Hedef dÃ¼ÄŸÃ¼m bilinmiyorsa hedefi geÃ§erli sayma.
             if (!IsKnown(target))
             {
                 Debug.LogWarning(
-                    $"[PathValidator] Hedef bilinen bir düğüm değil: {target}"
+                    $"[PathValidator] Hedef bilinen bir dÃ¼ÄŸÃ¼m deÄŸil: {target}"
                 );
                 return false;
             }
 
-            // Ara noktaları kontrol etmiyoruz.
-            // Böylece havalandırmaya giden geçerli NavMesh rotası
-            // ara nokta eşleştirmesi yüzünden reddedilmez.
+            // Ara noktalarÄ± kontrol etmiyoruz.
+            // BÃ¶ylece havalandÄ±rmaya giden geÃ§erli NavMesh rotasÄ±
+            // ara nokta eÅŸleÅŸtirmesi yÃ¼zÃ¼nden reddedilmez.
             return true;
         }
 

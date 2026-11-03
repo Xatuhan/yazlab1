@@ -37,7 +37,7 @@ namespace AI.Core
         {
             float now = Time.time;
 
-            // Durum deðiþimini kaydet.
+            // Durum deÄŸiÅŸimini kaydet.
             if (isActive != IsActive)
             {
                 if (isActive)
