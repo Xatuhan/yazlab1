@@ -825,11 +825,11 @@ Bilinçli tercihler:
 
 1. [Ollama](https://ollama.com/)'yı kurun ve uygulamayı açın.
 2. Terminalde modeli indirin: `ollama pull gemma4:e2b` (yaklaşık 3 GB VRAM kullanır).
-3. `Build/` klasöründeki `⟨oyun⟩.exe` dosyasını çalıştırın.
+3. `Build/` klasöründeki `theark.exe` dosyasını çalıştırın.
 
 Ollama açık değilse oyun yine açılır; NPC'ye yazıldığında sarı bir sistem mesajı ne yapılacağını söyler.
 
-Model ayarları `⟨oyun⟩_Data/StreamingAssets/NpcDialogue/ollama_settings.json` dosyasındadır; adres yalnızca `http://127.0.0.1` olabilir.
+Model ayarları `theark_Data/StreamingAssets/NpcDialogue/ollama_settings.json` dosyasındadır; adres yalnızca `http://127.0.0.1` olabilir.
 
 Kaynaktan açmak için: Unity 6000.3.25f1 (Unity Hub), URP. Sahneler: `Assets/MainMenu.unity` (ana menü), `Assets/giris.unity` (oyun).
 
