@@ -4,8 +4,8 @@ Yazılım Geliştirme Laboratuvarı-I, Proje 1 · Kocaeli Üniversitesi Teknoloj
 
 | Ekip üyesi | Öğrenci no | Sorumluluk |
 |---|---|---|
-| Melih Çetin | ⟨No⟩ | Otonom companion (NavMesh, Raycast, durum makinesi), sahne, menüler |
-| Batuhan Gürsoy | ⟨No⟩ | Yerel LLM NPC (Ollama), hata yönetimi, bitiş ekranı, testler |
+| Melih Çetin | 251307106 | Otonom companion (NavMesh, Raycast, durum makinesi), sahne, menüler |
+| Batuhan Gürsoy | 251307098 | Yerel LLM NPC (Ollama), hata yönetimi, bitiş ekranı, testler |
 
 Tarih: 6 Kasım 2026
 
@@ -336,15 +336,15 @@ sequenceDiagram
         H-->>C: [kurallar, son 6 tur, oyuncu, hatırlatma, not]
         C->>O: SendAsync(mesajlar)
         O->>LLM: POST /api/chat (format = JSON şeması, think = false)
-        Note over O,LLM: async; oyun akmaya devam eder
-        LLM-->>O: {"message":{"content":"{\"action\":\"allow\",\"reply\":\"...\"}"}}
+        Note over O,LLM: async, oyun akmaya devam eder
+        LLM-->>O: JSON cevap (action ve reply)
         O-->>C: LlmResult (içerik ya da hata türü)
         C->>P: TryParse(içerik)
         P-->>C: NpcDecision(Allow, söz)
         opt allow ama henüz 3. kanıt değil
             C->>O: aynı mesaj + şüphe notu (guard_doubt.txt)
             O-->>C: deny + yeni söz ("Gerçekten sen misin?")
-            Note over C: Proofs++; kapı açılmaz
+            Note over C: kanıt sayısı bir artar, kapı açılmaz
         end
         C->>H: AddTurn (yalnızca başarılı tur)
         C-->>NPC: Answered(karar)
@@ -842,7 +842,7 @@ Projede kullanılan, bize ait olmayan içerik aşağıdadır. Bilgiler 1 Kasım 
 | Scifi Girl v.01 | NPC (güvenlik şefi) | patrix | CC BY-NC-SA 4.0 | https://sketchfab.com/3d-models/scifi-girl-v01-96340701c2ed4d37851c7d9109eee9c0 |
 | Futuristic Sci-Fi Soldier in Full Body Armor | Oyuncu (iskelet Adobe Mixamo otomatik iskeletleyicisiyle eklendi) | anicomp78 | CC BY 4.0 | https://sketchfab.com/3d-models/futuristic-sci-fi-soldier-in-full-body-armor-d11c84d003a9418f8b2664e65b850891 |
 | Starter Assets: Third Person (Idle, Walk, Run animasyonları, `Armature.fbx`) | Oyuncu animasyonu | Unity Technologies | Unity Companion License | https://assetstore.unity.com/packages/slug/196526 |
-| TimmyRobot ayak sesleri (10 ses dosyası) | Oyuncunun ayak sesi | Unity Technologies, "Setup Guide" öğretici projesi | ⟨Unity Companion License, teyit edilecek⟩ | Unity Hub öğretici şablonu |
+| TimmyRobot ayak sesleri (10 ses dosyası) | Oyuncunun ayak sesi | Unity Technologies, Unity Hub'daki "Setup Guide" öğretici projesi | Unity Companion License (Unity'nin öğretici içeriği; projede ayrı lisans dosyası yok) | Unity Hub → Learn |
 | Sci-Fi Spider Drone, Hard Surface Robot Asset | Companion robot | gb.vignesh | CC BY 4.0 | https://sketchfab.com/3d-models/sci-fi-spider-drone-hard-surface-robot-asset-c986f198cda74cebbda88bb38bb1b519 |
 | Low Poly Air Vents | Çevre | DevEdee | CC BY 4.0 | https://sketchfab.com/3d-models/low-poly-air-vents-0f89ed1c583e462c93931c19d97bbf8a |
 | Modular Sci-Fi Corridor | Çevre | MagixBox | Standard Unity Asset Store EULA | https://assetstore.unity.com/packages/3d/environments/sci-fi/modular-sci-fi-corridor-142811 |
