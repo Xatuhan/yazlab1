@@ -4,8 +4,8 @@ Yazılım Geliştirme Laboratuvarı-I, Proje 1 · Kocaeli Üniversitesi Teknoloj
 
 | Ekip üyesi | Öğrenci no | Sorumluluk |
 |---|---|---|
-| Melih Çetin | ⟨No⟩ | Otonom companion (NavMesh, Raycast, durum makinesi), sahne, menüler |
-| Batuhan Gürsoy | ⟨No⟩ | Yerel LLM NPC (Ollama), hata yönetimi, bitiş ekranı, testler |
+| Melih Çetin | 251307106 | Otonom companion (NavMesh, Raycast, durum makinesi), sahne, menüler |
+| Batuhan Gürsoy | 251307098 | Yerel LLM NPC (Ollama), hata yönetimi, bitiş ekranı, testler |
 
 Tarih: 6 Kasım 2026
 
