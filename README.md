@@ -70,7 +70,7 @@ Mimari, durum tabanlı karma bir yol bulma ve keşif sistemidir (State-Based Hyb
 
 1. **Takip (varsayılan).** Robot oyuncuyu izler (`IdleState`, `MoveToTargetState`). Oyuncu E tuşuyla görev verince ilgili moda geçer.
 2. **Keşif: NavMesh düğümleri** (`PetInvestigateState`). Robot daha önce bilgisi olmadığı orb'ları tarar. Engel ile şalter arasındaki ilişkiyi kurduğu objeyi bulunca keşfi keser, şaltere gider ve engeli açar. Görev bitince Takip'e döner.
-3. **Labirent: ızgara tabanlı keşif** (`MazeRaycastNavigator`). Robot önce labirent girişine gider. Labirent alanına girince NavMesh düğüm keşfini kapatır ve ızgara tabanlı algoritmaya geçer. Son şaltere 1,5 m yaklaşınca şalteri kapatır, labirent modundan çıkar ve NavMesh keşfini yeniden başlatır.
+3. **Labirent: ızgara tabanlı keşif** (`MazeRaycastNavigator`). Robot önce labirent girişine gider. Labirent alanına girince NavMesh düğüm keşfini kapatır ve ızgara tabanlı algoritmaya geçer. Son şaltere 1,5 m yaklaştığında labirent navigasyonunu durdurur, kontrolü PetInvestigateState durumuna devreder ve şalterin etkinleştirilmesini sağlar.
 
 | Özellik | NavMesh düğüm algoritması | Labirent ızgara algoritması |
 |---|---|---|
@@ -651,7 +651,7 @@ Ek güvenceler:
 | Test | Başlangıç (X, Y, Z) | Süre | Sonuç | Yeniden rota | Gözlem |
 |---|---|---|---|---|---|
 | T1 | (2.786, 0.1773, 2.906) | 7,68 sn | Başarılı | 1 | Sorun yok |
-| T2 | (0.779, 0.1773, 2.906) | 8,33 sn | Başarılı | 2 | Takılma yaşandı |
+| T2 | (0.779, 0.1773, 2.906) | 8,33 sn | Başarılı | 2 | Takılma yaşandı, ardından ilerlemeye devam etti |
 | T3 | (1.743, 0.1773, 2.906) | 4,77 sn | Başarılı | 0 | Sorun yok |
 | T4 | (4.736, 0.1773, 2.906) | 15,70 sn | Başarısız | 6 | Lazer çarpışması |
 | T5 | (3.831, 0.1773, 2.906) | 8,49 sn | Başarılı | 0 | Sorun yok |
