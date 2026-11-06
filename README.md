@@ -723,6 +723,16 @@ Unity'de Play modunda, gerçek modelle elle yapılan denemeler:
 | ![Yüzük gösterildi](docs/rapor/img/npc-yuzuk.png) Yüzük gösterildi: şüpheli tepki | ![Beklerken FPS](docs/rapor/img/npc-beklerken-fps.png) Model beklenirken 216,5 FPS |
 | ![Kaybetme](docs/rapor/img/bitis-kaybetme.png) Tehditten sonra kaybetme ekranı | ![Kazanma](docs/rapor/img/bitis-kazanma.png) Anılarla ikna sonrası kazanma ekranı (önceki prompt sürümü) |
 
+Windows build'inde (`theark.exe`, 6 Kasım 2026) uçtan uca denemeler:
+
+| Deneme | Sonuç |
+|---|---|
+| Ollama kapalıyken NPC'ye yazmak | ✅ çökme yok, "Ollama'ya ulaşılamıyor" sistem mesajı |
+| Model 60 sn'de yüklenemedi (arkada video düzenleme açıkken) | ✅ çökme yok, "Model 60 saniyede cevap vermedi" sistem mesajı |
+| Robota E ile görev → şalter indirildi | ✅ |
+| Tehdit → kaybetme ekranı | ✅ |
+| Anılarla ikna → kapı açılır, kazanma ekranı | ✅ 9 mesajda. 2. anı tam sabır sınırında (8. mesaj) geldiği için oyun bir tur daha tanıdı; 9. mesajda anı yoktu ("aşkım benim geri geldim") ama model `allow` verdi: iki anıdan sonra sabrı tükenen şef yumuşadı. Üçüncü kararı kod denetlemez, modele bırakılmıştır |
+
 Ekim tarihli görüntülerde yazı kutusu eski "Bekçiyle konuş..." ipucunu gösterir; NPC'nin unvanı sonradan "Güvenlik Şefi" yapıldı.
 
 ### 5.4 Otomatik testler
@@ -825,7 +835,7 @@ Bilinçli tercihler:
 
 1. [Ollama](https://ollama.com/)'yı kurun ve uygulamayı açın.
 2. Terminalde modeli indirin: `ollama pull gemma4:e2b` (yaklaşık 3 GB VRAM kullanır).
-3. `Build/` klasöründeki `theark.exe` dosyasını çalıştırın.
+3. [Releases](https://github.com/Xatuhan/yazlab1/releases/latest) sayfasından `theark.zip` dosyasını indirip açın ve `theark.exe` dosyasını çalıştırın.
 
 Ollama açık değilse oyun yine açılır; NPC'ye yazıldığında sarı bir sistem mesajı ne yapılacağını söyler.
 
